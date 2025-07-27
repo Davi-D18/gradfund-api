@@ -1,0 +1,9 @@
+Django>=5.0,<6.0
+Dotenv
+djangorestframework>=3.15.0
+django-cors-headers>=3.14.0
+gunicorn
+whitenoise
+djangorestframework-simplejwt
+drf-yasg>=1.20.0
+psycopg2
