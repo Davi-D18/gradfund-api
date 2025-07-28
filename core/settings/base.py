@@ -23,7 +23,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'drf_yasg',
     'corsheaders',
-    'core'
+    'core',
+
+    'apps.authentication',
+    'apps.academic',
+    'apps.services'
 ]
 
 MIDDLEWARE = [
