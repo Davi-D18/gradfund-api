@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
+from utils.formatters import StringFormatter
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -22,6 +23,12 @@ class ServiceSerializer(serializers.ModelSerializer):
                  'estudante', 'tipo_servico']
 
 
+    def validate_titulo(self, value):
+        return StringFormatter.format_text(value, 'title')
+    
+    def validate_descricao(self, value):
+        return StringFormatter.format_text(value)
+    
     def validate_preco(self, preco):
         if preco < 0:
             raise serializers.ValidationError("O preço não pode ser negativo.")
@@ -66,3 +73,6 @@ class TypeServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeService
         fields = '__all__'
+    
+    def validate_nome(self, value):
+        return StringFormatter.format_text(value, 'title')

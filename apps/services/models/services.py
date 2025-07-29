@@ -1,11 +1,20 @@
 from django.db import models
 from apps.authentication.models import CustomerUser
+from utils.formatters import StringFormatter
 
 
 class TypeService(models.Model):
     nome = models.CharField(max_length=120)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.nome:
+            self.nome = StringFormatter.format_text(self.nome, 'title')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['nome']
@@ -27,6 +36,15 @@ class Service(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
     ativo = models.BooleanField(default=True)
 
+    def clean(self):
+        if self.titulo:
+            self.titulo = StringFormatter.format_text(self.titulo, 'title')
+        if self.descricao:
+            self.descricao = StringFormatter.format_text(self.descricao)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['titulo']

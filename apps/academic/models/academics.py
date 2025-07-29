@@ -1,4 +1,5 @@
 from django.db import models
+from utils.formatters import StringFormatter
 
 
 class Universidade(models.Model):
@@ -7,6 +8,19 @@ class Universidade(models.Model):
     cidade = models.CharField(max_length=40, blank=True, null=True)
     estado = models.CharField(max_length=25, blank=True, null=True)
 
+    def clean(self):
+        if self.nome:
+            self.nome = StringFormatter.format_text(self.nome, 'title')
+        if self.sigla:
+            self.sigla = StringFormatter.format_text(self.sigla, 'upper')
+        if self.cidade:
+            self.cidade = StringFormatter.format_text(self.cidade, 'title')
+        if self.estado:
+            self.estado = StringFormatter.format_text(self.estado, 'title')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['nome']
@@ -19,6 +33,14 @@ class Universidade(models.Model):
 
 class Curso(models.Model):
     nome = models.CharField(max_length=200, blank=True, null=True)
+
+    def clean(self):
+        if self.nome:
+            self.nome = StringFormatter.format_text(self.nome, 'title')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['nome']
