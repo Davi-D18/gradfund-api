@@ -11,5 +11,9 @@ class CustomerUser(models.Model):
     curso = models.ForeignKey(Curso, on_delete=models.PROTECT, blank=True, null=True)
     ano_formatura = models.IntegerField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = "Perfil de Usuário"
+        verbose_name_plural = "Perfis de Usuários"
+        
     def __str__(self):
         return self.usuario.username
