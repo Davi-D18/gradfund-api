@@ -5,7 +5,7 @@ from apps.academic.models.academics import Universidade, Curso
 class UniversidadeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Universidade
-        fields = ['id', 'nome', 'sigla', 'cidade', 'estado', 'criado_em', 'atualizado_em']
+        fields = ['id', 'nome', 'sigla', 'cidade', 'estado']
     
     def validate_nome(self, value):
         if len(value) < 3:
