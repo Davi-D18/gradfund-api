@@ -20,22 +20,37 @@ class Command(BaseCommand):
                 self.stdout.write('Operação cancelada.')
                 return
 
-        # Remove migrations
-        for root, dirs, files in os.walk('apps'):
-            if 'migrations' in dirs:
-                migrations_path = os.path.join(root, 'migrations')
-                for file in os.listdir(migrations_path):
-                    if file.endswith('.py') and file != '__init__.py':
-                        os.remove(os.path.join(migrations_path, file))
-
-        # Remove database
-        if os.path.exists('database.db'):
-            os.remove('database.db')
-
-        # Recreate migrations and database
-        call_command('makemigrations')
-        call_command('migrate')
+        # Pergunta se deve apagar migrations
+        reset_migrations = input('Deseja apagar as migrations e recriar? (s/N): ')
         
-        self.stdout.write(
-            self.style.SUCCESS('Banco de dados resetado com sucesso!')
-        )
+        if reset_migrations.lower() == 's':
+            # Remove migrations
+            for root, dirs, files in os.walk('apps'):
+                if 'migrations' in dirs:
+                    migrations_path = os.path.join(root, 'migrations')
+                    for file in os.listdir(migrations_path):
+                        if file.endswith('.py') and file != '__init__.py':
+                            os.remove(os.path.join(migrations_path, file))
+            
+            # Remove database
+            if os.path.exists('database.db'):
+                os.remove('database.db')
+            
+            # Recreate migrations and database
+            call_command('makemigrations')
+            call_command('migrate')
+            
+            self.stdout.write(
+                self.style.SUCCESS('Banco de dados e migrations resetados com sucesso!')
+            )
+        else:
+            # Remove apenas database
+            if os.path.exists('database.db'):
+                os.remove('database.db')
+            
+            # Recreate database with existing migrations
+            call_command('migrate')
+            
+            self.stdout.write(
+                self.style.SUCCESS('Banco de dados resetado com sucesso! (migrations preservadas)')
+            )
