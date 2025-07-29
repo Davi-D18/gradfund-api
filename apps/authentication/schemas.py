@@ -9,10 +9,10 @@ from apps.academic.models.academics import Universidade, Curso
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     
-    # Campos do CustomerUser
+    # Campos do CustomerUser (usando nomes em vez de IDs)
     tipo_usuario = serializers.ChoiceField(choices=USER_TYPE_CHOICES, required=True, write_only=True, error_messages={'required': 'O tipo de usuário é obrigatório'})
-    universidade = serializers.PrimaryKeyRelatedField(queryset=Universidade.objects.all(), required=False, allow_null=True, write_only=True)
-    curso = serializers.PrimaryKeyRelatedField(queryset=Curso.objects.all(), required=False, allow_null=True, write_only=True)
+    universidade = serializers.SlugRelatedField(queryset=Universidade.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
+    curso = serializers.SlugRelatedField(queryset=Curso.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
     ano_formatura = serializers.IntegerField(required=False, allow_null=True, write_only=True)
 
     class Meta:
@@ -23,14 +23,18 @@ class UserSerializer(serializers.ModelSerializer):
             'email': {'required': True, 'error_messages': {'required': 'O email é obrigatório'}},
         }
 
-    def validate_email(self, value):
+    def validate(self, data):
         """
-        Valida se o email já existe no sistema.
+        Validações gerais dos dados.
         """
-        User = get_user_model()
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("O email já está em uso")
-        return value
+        # Se for universitário, curso deve ser informado se universidade for informada
+        if data.get('tipo_usuario') == 'universitario':
+            if data.get('universidade') and not data.get('curso'):
+                raise serializers.ValidationError({
+                    'curso': 'Curso é obrigatório quando universidade é informada'
+                })
+        
+        return data
 
     def validate_username(self, value):
         """
@@ -39,6 +43,52 @@ class UserSerializer(serializers.ModelSerializer):
         User = get_user_model()
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("O nome de usuário já está em uso")
+        
+        # Validar formato do username
+        if len(value) < 3:
+            raise serializers.ValidationError("O nome de usuário deve ter pelo menos 3 caracteres")
+        
+        return value
+    
+    def validate_email(self, value):
+        """
+        Valida se o email já existe e tem formato válido.
+        """
+        import re
+        User = get_user_model()
+        
+        # Validar formato do email
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, value):
+            raise serializers.ValidationError("Formato de email inválido")
+        
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("O email já está em uso")
+        return value
+    
+    def validate_ano_formatura(self, value):
+        """
+        Valida se o ano de formatura é válido.
+        """
+        if value is not None:
+            from datetime import datetime
+            current_year = datetime.now().year
+            
+            if value < current_year:
+                raise serializers.ValidationError("O ano de formatura não pode ser no passado")
+            if value > current_year + 10:
+                raise serializers.ValidationError("O ano de formatura não pode ser mais de 10 anos no futuro")
+        
+        return value
+
+    def validate_universidade(self, value):
+        """
+        Verifica se universidade é informada, se for, o campo curso se torna obrigatório
+        """
+        if value is not None:
+            if not self.initial_data.get('curso'):
+                raise serializers.ValidationError("Curso é obrigatório quando universidade é informada")
+
         return value
 
     def create(self, validated_data):
@@ -105,4 +155,8 @@ class TokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token['username'] = user.username
+        
+        customer_user = user.usuario_user
+        token['tipo_usuario'] = customer_user.tipo_usuario
+            
         return token
