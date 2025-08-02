@@ -14,27 +14,15 @@ class UserSerializer(serializers.ModelSerializer):
     universidade = serializers.SlugRelatedField(queryset=Universidade.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
     curso = serializers.SlugRelatedField(queryset=Curso.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
     ano_formatura = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    contato = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = get_user_model()
-        fields = ['username', 'email', 'password', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura']
+        fields = ['username', 'email', 'password', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura', 'contato']
         extra_kwargs = {
             'username': {'required': True, 'error_messages': {'required': 'O nome de usuário é obrigatório'}},
             'email': {'required': True, 'error_messages': {'required': 'O email é obrigatório'}},
         }
-
-    def validate(self, data):
-        """
-        Validações gerais dos dados.
-        """
-        # Se for universitário, curso deve ser informado se universidade for informada
-        if data.get('tipo_usuario') == 'universitario':
-            if data.get('universidade') and not data.get('curso'):
-                raise serializers.ValidationError({
-                    'curso': 'Curso é obrigatório quando universidade é informada'
-                })
-        
-        return data
 
     def validate_username(self, value):
         """
@@ -98,6 +86,7 @@ class UserSerializer(serializers.ModelSerializer):
             'universidade': validated_data.pop('universidade', None),
             'curso': validated_data.pop('curso', None),
             'ano_formatura': validated_data.pop('ano_formatura', None),
+            'contato': validated_data.pop('contato', None)
         }
         
         # Criar User
@@ -160,3 +149,80 @@ class TokenObtainPairSerializer(TokenObtainPairSerializer):
         token['tipo_usuario'] = customer_user.tipo_usuario
             
         return token
+
+
+class UserNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ['username', 'email', 'first_name', 'last_name', 'date_joined']
+
+
+class UniversidadeNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Universidade
+        fields = ['id', 'nome', 'sigla']
+
+
+class CursoNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Curso
+        fields = ['id', 'nome']
+
+
+class CustomerUserProfileSerializer(serializers.ModelSerializer):
+    usuario = UserNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedSerializer(read_only=True)
+    curso = CursoNestedSerializer(read_only=True)
+    
+    class Meta:
+        model = CustomerUser
+        fields = ['id', 'usuario', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura', 'contato']
+
+
+class CustomerUserUpdateSerializer(serializers.ModelSerializer):
+    # Campos do User
+    username = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    
+    # Campos do CustomerUser
+    universidade_id = serializers.PrimaryKeyRelatedField(
+        queryset=Universidade.objects.all(),
+        source='universidade',
+        required=False,
+        allow_null=True
+    )
+    curso_id = serializers.PrimaryKeyRelatedField(
+        queryset=Curso.objects.all(),
+        source='curso',
+        required=False,
+        allow_null=True
+    )
+    
+    class Meta:
+        model = CustomerUser
+        fields = ['username', 'email', 'first_name', 'last_name', 'universidade_id', 'curso_id', 'ano_formatura', 'contato']
+    
+    def update(self, instance, validated_data):
+        # Separar dados do User e CustomerUser
+        user_data = {
+            'username': validated_data.pop('username', None),
+            'email': validated_data.pop('email', None),
+            'first_name': validated_data.pop('first_name', None),
+            'last_name': validated_data.pop('last_name', None),
+        }
+        
+        # Atualizar User
+        user = instance.usuario
+        for field, value in user_data.items():
+            if value is not None:
+                setattr(user, field, value)
+        user.save()
+        
+        # Atualizar CustomerUser
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        
+        return instance
