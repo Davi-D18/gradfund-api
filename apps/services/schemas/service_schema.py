@@ -1,26 +1,68 @@
 from rest_framework import serializers
 from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
+from apps.academic.models.academics import Universidade, Curso
+from django.contrib.auth.models import User
 from utils.formatters import StringFormatter
 
 
+class CustomerUserNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name']
+
+
+class UniversidadeNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Universidade
+        fields = ['nome', 'sigla']
+
+
+class CursoNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Curso
+        fields = ['nome']
+
+
+class TypeServiceNestedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TypeService
+        fields = ['id', 'nome']
+
+
+class EstudanteNestedSerializer(serializers.ModelSerializer):
+    usuario = CustomerUserNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedSerializer(read_only=True)
+    curso = CursoNestedSerializer(read_only=True)
+    
+    class Meta:
+        model = CustomerUser
+        fields = ['id', 'usuario', 'universidade', 'curso']
+
+
 class ServiceSerializer(serializers.ModelSerializer):
-    estudante = serializers.SlugRelatedField(
+    estudante = EstudanteNestedSerializer(read_only=True)
+    tipo_servico = TypeServiceNestedSerializer(read_only=True)
+    
+    # Campos para escrita (aceita ID)
+    estudante_id = serializers.PrimaryKeyRelatedField(
         queryset=CustomerUser.objects.all(),
-        slug_field='usuario__username',
-        required=False
+        source='estudante',
+        write_only=True,
+        required=True
     )
     
-    tipo_servico = serializers.SlugRelatedField(
+    tipo_servico_id = serializers.PrimaryKeyRelatedField(
         queryset=TypeService.objects.all(),
-        slug_field='nome',
+        source='tipo_servico',
+        write_only=True,
         required=True
     )
 
     class Meta:
         model = Service
-        fields = ['id', 'titulo', 'descricao', 'preco', 'criado_em', 'atualizado_em', 'ativo',
-                 'estudante', 'tipo_servico']
+        fields = ['id', 'titulo', 'descricao', 'preco', 'criado_em', 'ativo',
+                 'estudante', 'tipo_servico', 'estudante_id', 'tipo_servico_id']
 
 
     def validate_titulo(self, value):
@@ -35,7 +77,6 @@ class ServiceSerializer(serializers.ModelSerializer):
         return preco    
   
     
-    # Verifica se o usuário que está criando o serviço é um estudante universitário
     def validate(self, data):
         request = self.context['request']
         
@@ -45,17 +86,13 @@ class ServiceSerializer(serializers.ModelSerializer):
             tipo_usuario = token_payload.get('tipo_usuario')
             
             if tipo_usuario != 'universitario':
-                raise serializers.ValidationError({"tipo_usuario": "Apenas estudantes universitários podem criar serviços."})
+                raise serializers.ValidationError({"tipo_usuario": "Apenas universitários podem criar serviços."})
         else:
             raise serializers.ValidationError("Token de autenticação inválido.")
         
-        # Definir estudante automaticamente como o usuário logado se não informado
-        if not data.get('estudante'):
-            data['estudante'] = request.user.usuario_user
-            
         return data
 
-    def validate_estudante(self, estudante):
+    def validate_estudante_id(self, estudante):
         request = self.context['request']
         
         # Verificar se o estudante informado é o mesmo usuário da requisição
