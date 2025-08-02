@@ -10,6 +10,7 @@ class CustomerUser(models.Model):
     universidade = models.ForeignKey(Universidade, on_delete=models.PROTECT, blank=True, null=True)
     curso = models.ForeignKey(Curso, on_delete=models.PROTECT, blank=True, null=True)
     ano_formatura = models.IntegerField(blank=True, null=True)
+    contato = models.CharField(max_length=50, blank=True, null=True, help_text="Contato para comunicação (WhatsApp, Instagram, telefone, etc.)")
 
     class Meta:
         verbose_name = "Perfil de Usuário"
