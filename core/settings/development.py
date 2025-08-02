@@ -5,7 +5,6 @@ Configurações de desenvolvimento.
 from .base import *  # noqa: F403
 from datetime import timedelta
 
-
 DEBUG = True
 
 DB = DATABASES["default"]  # noqa: F405
@@ -26,8 +25,8 @@ SWAGGER_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-ALLOWED_HOSTS = ['*'] # Permitir todos os hosts em desenvolvimento
+CORS_ALLOW_ALL_ORIGINS = True
