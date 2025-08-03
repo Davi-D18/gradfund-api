@@ -4,7 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from apps.services.schemas.service_schema import ServiceSerializer, TypeServiceSerializer
+from apps.services.schemas.service_schema import ServiceSerializer, ServiceDetailSerializer, TypeServiceSerializer
 from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
 from apps.services.permissions import IsOwner
@@ -13,6 +13,11 @@ from apps.services.permissions import IsOwner
 class ServiceViewSet(ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ServiceDetailSerializer
+        return ServiceSerializer
 
     def get_permissions(self):
         # nas ações retrieve/update/partial_update/destroy, aplica também IsOwner

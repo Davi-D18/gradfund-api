@@ -19,3 +19,13 @@ class StringFormatter:
             return cleaned_value
         
         return cleaned_value
+    
+    @staticmethod
+    def clean_phone(value):
+        """Remove caracteres especiais de números de telefone"""
+        if not value:
+            return value
+        
+        # Remove parênteses, espaços, hífens e underscores
+        cleaned = value.replace('(', '').replace(')', '').replace(' ', '').replace('-', '').replace('_', '')
+        return cleaned.strip()

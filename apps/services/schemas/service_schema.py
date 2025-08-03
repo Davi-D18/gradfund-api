@@ -39,6 +39,16 @@ class EstudanteNestedSerializer(serializers.ModelSerializer):
         fields = ['id', 'usuario', 'universidade', 'curso']
 
 
+class EstudanteDetailSerializer(serializers.ModelSerializer):
+    usuario = CustomerUserNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedSerializer(read_only=True)
+    curso = CursoNestedSerializer(read_only=True)
+    
+    class Meta:
+        model = CustomerUser
+        fields = ['id', 'usuario', 'universidade', 'curso', 'contato']
+
+
 class ServiceSerializer(serializers.ModelSerializer):
     estudante = EstudanteNestedSerializer(read_only=True)
     tipo_servico = TypeServiceNestedSerializer(read_only=True)
@@ -96,6 +106,16 @@ class ServiceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Usuário não autenticado.")
             
         return estudante
+
+
+class ServiceDetailSerializer(serializers.ModelSerializer):
+    estudante = EstudanteDetailSerializer(read_only=True)
+    tipo_servico = TypeServiceNestedSerializer(read_only=True)
+    
+    class Meta:
+        model = Service
+        fields = ['id', 'titulo', 'descricao', 'preco', 'criado_em', 'ativo',
+                 'estudante', 'tipo_servico']
 
 
 class TypeServiceSerializer(serializers.ModelSerializer):

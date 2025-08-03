@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from apps.authentication.constants.user import USER_TYPE_CHOICES
 from apps.academic.models.academics import Universidade, Curso
+from utils.formatters import StringFormatter
 
 
 class CustomerUser(models.Model):
@@ -11,6 +12,14 @@ class CustomerUser(models.Model):
     curso = models.ForeignKey(Curso, on_delete=models.PROTECT, blank=True, null=True)
     ano_formatura = models.IntegerField(blank=True, null=True)
     contato = models.CharField(max_length=50, blank=True, null=True, help_text="Contato para comunicação (WhatsApp, Instagram, telefone, etc.)")
+
+    def clean(self):
+        if self.contato:
+            self.contato = StringFormatter.clean_phone(self.contato)
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Perfil de Usuário"
