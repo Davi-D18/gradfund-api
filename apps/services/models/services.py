@@ -10,7 +10,7 @@ class TypeService(models.Model):
 
     def clean(self):
         if self.nome:
-            self.nome = StringFormatter.format_text(self.nome, 'title')
+            self.nome = StringFormatter.format_text(self.nome, 'strip')
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -38,9 +38,9 @@ class Service(models.Model):
 
     def clean(self):
         if self.titulo:
-            self.titulo = StringFormatter.format_text(self.titulo, 'title')
+            self.titulo = StringFormatter.format_text(self.titulo, 'strip')
         if self.descricao:
-            self.descricao = StringFormatter.format_text(self.descricao)
+            self.descricao = StringFormatter.format_text(self.descricao, 'strip')
 
     def save(self, *args, **kwargs):
         self.clean()

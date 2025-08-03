@@ -3,7 +3,6 @@ from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
 from apps.academic.models.academics import Universidade, Curso
 from django.contrib.auth.models import User
-from utils.formatters import StringFormatter
 
 
 class CustomerUserNestedSerializer(serializers.ModelSerializer):
@@ -63,13 +62,6 @@ class ServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = ['id', 'titulo', 'descricao', 'preco', 'criado_em', 'ativo',
                  'estudante', 'tipo_servico', 'estudante_id', 'tipo_servico_id']
-
-
-    def validate_titulo(self, value):
-        return StringFormatter.format_text(value, 'title')
-    
-    def validate_descricao(self, value):
-        return StringFormatter.format_text(value)
     
     def validate_preco(self, preco):
         if preco < 0:
@@ -110,6 +102,3 @@ class TypeServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = TypeService
         fields = '__all__'
-    
-    def validate_nome(self, value):
-        return StringFormatter.format_text(value, 'title')

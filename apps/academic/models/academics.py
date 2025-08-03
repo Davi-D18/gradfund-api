@@ -10,13 +10,13 @@ class Universidade(models.Model):
 
     def clean(self):
         if self.nome:
-            self.nome = StringFormatter.format_text(self.nome, 'title')
+            self.nome = StringFormatter.format_text(self.nome, 'strip')
         if self.sigla:
-            self.sigla = StringFormatter.format_text(self.sigla, 'upper')
+            self.sigla = StringFormatter.format_text(self.sigla, 'strip')
         if self.cidade:
-            self.cidade = StringFormatter.format_text(self.cidade, 'title')
+            self.cidade = StringFormatter.format_text(self.cidade, 'strip')
         if self.estado:
-            self.estado = StringFormatter.format_text(self.estado, 'title')
+            self.estado = StringFormatter.format_text(self.estado, 'strip')
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -36,7 +36,7 @@ class Curso(models.Model):
 
     def clean(self):
         if self.nome:
-            self.nome = StringFormatter.format_text(self.nome, 'title')
+            self.nome = StringFormatter.format_text(self.nome, 'strip')
 
     def save(self, *args, **kwargs):
         self.clean()

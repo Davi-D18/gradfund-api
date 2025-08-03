@@ -15,5 +15,7 @@ class StringFormatter:
             return cleaned_value.upper()
         elif format_type == 'lower':
             return cleaned_value.lower()
+        elif format_type == 'strip':
+            return cleaned_value
         
         return cleaned_value
