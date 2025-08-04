@@ -3,6 +3,7 @@ from django.urls import path, include
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from core.admin_views import admin_stats_api
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -17,6 +18,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
    path('admin/', admin.site.urls),
+   path('admin/api/stats/', admin_stats_api, name='admin-stats-api'),
    path('api/v1/', include('apps.academic.urls')),
    path('api/v1/', include('apps.services.urls')),
    path('api/v1/auth/', include('apps.authentication.urls')),

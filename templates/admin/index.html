@@ -1,0 +1,80 @@
+{% extends "admin/index.html" %}
+{% load static %}
+
+{% block extrahead %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/admin-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    
+    <div class="stats-grid">
+        <div class="dashboard-card">
+            <i class="fas fa-users card-icon" style="color: #007cba;"></i>
+            <div class="card-number" style="color: #007cba;">{{ dashboard_stats.total_usuarios|default:"0" }}</div>
+            <div class="card-label">Total de Usuários</div>
+        </div>
+        
+        <div class="dashboard-card">
+            <i class="fas fa-graduation-cap card-icon" style="color: #28a745;"></i>
+            <div class="card-number" style="color: #28a745;">{{ dashboard_stats.total_estudantes|default:"0" }}</div>
+            <div class="card-label">Estudantes</div>
+        </div>
+        
+        <div class="dashboard-card">
+            <i class="fas fa-briefcase card-icon" style="color: #17a2b8;"></i>
+            <div class="card-number" style="color: #17a2b8;">{{ dashboard_stats.total_servicos|default:"0" }}</div>
+            <div class="card-label">Total de Serviços</div>
+        </div>
+        
+        <div class="dashboard-card">
+            <i class="fas fa-check-circle card-icon" style="color: #28a745;"></i>
+            <div class="card-number" style="color: #28a745;">{{ dashboard_stats.servicos_ativos|default:"0" }}</div>
+            <div class="card-label">Serviços Ativos</div>
+        </div>
+    </div>
+    
+    <div class="info-grid">
+        <div class="info-card">
+            <h4 class="section-header">
+                <i class="fas fa-university" style="color: #007cba;"></i>
+                Top 5 Universidades
+            </h4>
+            <div>
+                {% if top_universidades %}
+                    {% for uni in top_universidades %}
+                    <div class="list-item">
+                        <strong>{{ uni.universidade__nome }}</strong>
+                        <span class="badge-count">{{ uni.count }} estudantes</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Nenhuma universidade cadastrada</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h4 class="section-header">
+                <i class="fas fa-star" style="color: #ffc107;"></i>
+                Tipos de Serviços Populares
+            </h4>
+            <div>
+                {% if top_tipos_servicos %}
+                    {% for tipo in top_tipos_servicos %}
+                    <div class="list-item">
+                        <strong>{{ tipo.tipo_servico__nome }}</strong>
+                        <span class="badge-count">{{ tipo.count }} serviços</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Nenhum tipo de serviço cadastrado</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}
