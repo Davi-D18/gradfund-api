@@ -1,4 +1,11 @@
 /* GradFund Admin - Customizações CSS */
+.login-logo {
+    text-align: center;
+}
+
+.login-logo h1 picture img {
+    width: 32%;
+}
 
 /* ===== BOTÕES ===== */
 /* Botão Adicionar - Verde com melhor contraste */
