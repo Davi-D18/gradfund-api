@@ -22,5 +22,6 @@ urlpatterns = [
    path('api/v1/', include('apps.academic.urls')),
    path('api/v1/', include('apps.services.urls')),
    path('api/v1/auth/', include('apps.authentication.urls')),
+   path('api/v1/chat/', include('apps.chat.urls')),
    path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 ]

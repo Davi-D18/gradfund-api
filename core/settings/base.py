@@ -29,7 +29,8 @@ INSTALLED_APPS = [
 
     'apps.authentication',
     'apps.academic',
-    'apps.services'
+    'apps.services',
+    'apps.chat'
 ]
 
 MIDDLEWARE = [
