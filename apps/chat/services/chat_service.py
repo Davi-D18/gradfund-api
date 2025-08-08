@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Q
 from apps.chat.models.chat import ChatRoom, Message
-from apps.services.models.service import Service
+from apps.services.models import Service
 
 
 class ChatService:

@@ -89,7 +89,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'content': message.conteudo,
                 'user_id': message.remetente.id,
                 'username': message.remetente.username,
-                'timestamp': message.data_hora.isoformat()
+                'timestamp': message.enviado_em.isoformat()
             }
         )
 
@@ -184,7 +184,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
         
         # Atualizar timestamp da última mensagem na sala
-        room.ultima_mensagem_em = message.data_hora
+        room.ultima_mensagem_em = message.enviado_em
         room.save()
         
         return message

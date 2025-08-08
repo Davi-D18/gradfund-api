@@ -17,10 +17,10 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = [
-            'id', 'conteudo', 'remetente', 'data_hora',
+            'id', 'conteudo', 'remetente', 'enviado_em',
             'tipo_mensagem', 'lida', 'entregue_em', 'lida_em'
         ]
-        read_only_fields = ['id', 'data_hora', 'remetente', 'entregue_em', 'lida_em']
+        read_only_fields = ['id', 'enviado_em', 'remetente', 'entregue_em', 'lida_em']
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
@@ -41,14 +41,16 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     
     def get_ultima_mensagem(self, obj):
         """Retorna a última mensagem da sala"""
-        ultima = obj.message_set.order_by('-data_hora').first()
+        from apps.chat.models.chat import Message
+        ultima = Message.objects.filter(sala_chat=obj).order_by('-enviado_em').first()
         if ultima:
             return MessageSerializer(ultima).data
         return None
     
     def get_total_mensagens(self, obj):
         """Retorna total de mensagens na sala"""
-        return obj.message_set.count()
+        from apps.chat.models.chat import Message
+        return Message.objects.filter(sala_chat=obj).count()
     
     def get_mensagens_nao_lidas(self, obj):
         """Retorna mensagens não lidas pelo usuário atual"""

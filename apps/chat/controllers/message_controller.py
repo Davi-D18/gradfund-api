@@ -34,7 +34,7 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
             
             return Message.objects.filter(
                 sala_chat=sala
-            ).select_related('remetente').order_by('-data_hora')
+            ).select_related('remetente').order_by('-enviado_em')
         
         return Message.objects.none()
     
