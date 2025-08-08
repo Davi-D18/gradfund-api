@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import UntypedToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from apps.chat.models.chat import ChatRoom, Message
+from apps.chat.services.chat_service import ChatService
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -168,7 +169,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Verifica se usuário tem permissão para acessar a sala"""
         try:
             room = ChatRoom.objects.get(id=self.room_id)
-            return room.participantes.filter(id=self.user.id).exists()
+            return ChatService.verificar_permissao_sala(room, self.user)
         except ChatRoom.DoesNotExist:
             return False
 

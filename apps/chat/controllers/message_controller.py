@@ -6,6 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from apps.chat.models.chat import ChatRoom, Message
 from apps.chat.schemas.chat_schema import MessageSerializer
+from apps.chat.services.chat_service import ChatService
 
 
 class MessagePagination(PageNumberPagination):
@@ -25,13 +26,12 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         """Retorna mensagens da sala especificada"""
         room_id = self.kwargs.get('room_pk')
         if room_id:
-            # Verificar se usuário tem acesso à sala
-            sala = get_object_or_404(
-                ChatRoom,
-                id=room_id,
-                participantes=self.request.user,
-                ativo=True
-            )
+            # Verificar se usuário tem acesso à sala usando service
+            sala = get_object_or_404(ChatRoom, id=room_id)
+            
+            if not ChatService.verificar_permissao_sala(sala, self.request.user):
+                return Message.objects.none()
+            
             return Message.objects.filter(
                 sala_chat=sala
             ).select_related('remetente').order_by('-data_hora')
@@ -62,18 +62,17 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
     def marcar_todas_lidas(self, request, room_pk=None):
         """Marca todas as mensagens da sala como lidas"""
         room_id = self.kwargs.get('room_pk')
-        sala = get_object_or_404(
-            ChatRoom,
-            id=room_id,
-            participantes=request.user,
-            ativo=True
-        )
+        sala = get_object_or_404(ChatRoom, id=room_id)
         
-        # Marcar como lidas apenas mensagens de outros usuários
-        mensagens_atualizadas = Message.objects.filter(
-            sala_chat=sala,
-            lida=False
-        ).exclude(remetente=request.user).update(lida=True)
+        # Verificar permissão usando service
+        if not ChatService.verificar_permissao_sala(sala, request.user):
+            return Response(
+                {'error': 'Sem permissão para acessar esta sala'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Usar service para marcar mensagens como lidas
+        mensagens_atualizadas = ChatService.marcar_mensagens_como_lidas(sala, request.user)
         
         return Response(
             {'message': f'{mensagens_atualizadas} mensagens marcadas como lidas'},

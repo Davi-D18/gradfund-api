@@ -54,9 +54,8 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         """Retorna mensagens não lidas pelo usuário atual"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            return obj.message_set.filter(
-                lida=False
-            ).exclude(remetente=request.user).count()
+            from apps.chat.services.chat_service import ChatService
+            return ChatService.contar_mensagens_nao_lidas(obj, request.user)
         return 0
 
 
