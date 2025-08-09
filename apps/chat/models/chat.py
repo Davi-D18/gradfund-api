@@ -17,7 +17,7 @@ class ChatRoom(models.Model):
         verbose_name_plural = 'Salas de Chat'
 
     def __str__(self):
-        return f"Chat - {self.servico.title}"
+        return f"Chat - {self.servico.titulo}"
 
 
 class Message(models.Model):
