@@ -1,1 +1,1 @@
-from .chat_consumer import ChatConsumer
+# Importações removidas para evitar conflitos de inicialização

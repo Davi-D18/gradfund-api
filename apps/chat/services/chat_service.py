@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from apps.authentication.models import CustomerUser
 from django.db.models import Q
 from apps.chat.models.chat import ChatRoom, Message
 from apps.services.models import Service
@@ -8,13 +8,13 @@ class ChatService:
     """Service para lógica de negócio do chat"""
     
     @staticmethod
-    def criar_ou_obter_sala_por_servico(servico_id: int, contratante: User) -> ChatRoom:
+    def criar_ou_obter_sala_por_servico(servico_id: int, contratante: CustomerUser) -> ChatRoom:
         """
         Cria ou obtém sala de chat entre estudante (dono do serviço) e contratante
         """
         try:
             servico = Service.objects.get(id=servico_id)
-            estudante = servico.estudante.usuario
+            estudante = servico.estudante  # CustomerUser
             
             # Verificar se já existe sala entre os usuários para este serviço
             sala_existente = ChatRoom.objects.filter(
@@ -37,14 +37,14 @@ class ChatService:
             raise ValueError("Serviço não encontrado")
     
     @staticmethod
-    def verificar_permissao_sala(sala: ChatRoom, usuario: User) -> bool:
+    def verificar_permissao_sala(sala: ChatRoom, usuario: CustomerUser) -> bool:
         """
         Verifica se usuário tem permissão para acessar a sala
         """
         return sala.participantes.filter(id=usuario.id).exists() and sala.ativo
     
     @staticmethod
-    def obter_salas_usuario(usuario: User):
+    def obter_salas_usuario(usuario: CustomerUser):
         """
         Obtém todas as salas ativas do usuário ordenadas por última mensagem
         """
@@ -54,7 +54,7 @@ class ChatService:
         ).prefetch_related('participantes', 'servico').order_by('-ultima_mensagem_em')
     
     @staticmethod
-    def contar_mensagens_nao_lidas(sala: ChatRoom, usuario: User) -> int:
+    def contar_mensagens_nao_lidas(sala: ChatRoom, usuario: CustomerUser) -> int:
         """
         Conta mensagens não lidas pelo usuário na sala
         """
@@ -64,7 +64,7 @@ class ChatService:
         ).exclude(remetente=usuario).count()
     
     @staticmethod
-    def marcar_mensagens_como_lidas(sala: ChatRoom, usuario: User) -> int:
+    def marcar_mensagens_como_lidas(sala: ChatRoom, usuario: CustomerUser) -> int:
         """
         Marca todas as mensagens da sala como lidas (exceto as do próprio usuário)
         """
@@ -74,20 +74,20 @@ class ChatService:
         ).exclude(remetente=usuario).update(lida=True)
     
     @staticmethod
-    def obter_participante_oposto(sala: ChatRoom, usuario_atual: User) -> User:
+    def obter_participante_oposto(sala: ChatRoom, usuario_atual: CustomerUser) -> CustomerUser:
         """
         Obtém o outro participante da conversa (não o usuário atual)
         """
         return sala.participantes.exclude(id=usuario_atual.id).first()
     
     @staticmethod
-    def validar_criacao_sala(servico_id: int, contratante: User) -> dict:
+    def validar_criacao_sala(servico_id: int, contratante: CustomerUser) -> dict:
         """
         Valida se é possível criar sala para o serviço
         """
         try:
             servico = Service.objects.get(id=servico_id)
-            estudante = servico.estudante.usuario
+            estudante = servico.estudante  # CustomerUser
             
             # Não pode criar sala consigo mesmo
             if estudante.id == contratante.id:

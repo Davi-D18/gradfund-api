@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User
+from apps.authentication.models import CustomerUser
 from apps.services.models.services import Service
 
 
 class ChatRoom(models.Model):
-    participantes = models.ManyToManyField(User, related_name='salas_chat')
+    participantes = models.ManyToManyField(CustomerUser, related_name='salas_chat')
     servico = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='salas_chat')
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -28,7 +28,7 @@ class Message(models.Model):
     ]
 
     sala_chat = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='mensagens')
-    remetente = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mensagens_enviadas')
+    remetente = models.ForeignKey(CustomerUser, on_delete=models.CASCADE, related_name='mensagens_enviadas')
     conteudo = models.TextField()
     tipo_mensagem = models.CharField(max_length=10, choices=TIPOS_MENSAGEM, default='text')
     enviado_em = models.DateTimeField(auto_now_add=True)
@@ -42,4 +42,4 @@ class Message(models.Model):
         verbose_name_plural = 'Mensagens'
 
     def __str__(self):
-        return f"{self.remetente.username}: {self.conteudo[:50]}"
+        return f"{self.remetente.usuario.username}: {self.conteudo[:50]}"

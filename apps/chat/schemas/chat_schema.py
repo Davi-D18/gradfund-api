@@ -1,12 +1,16 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from apps.authentication.models import CustomerUser
 from apps.chat.models.chat import ChatRoom, Message
 
 
 class UserChatSerializer(serializers.ModelSerializer):
     """Serializer básico para usuário no contexto do chat"""
+    username = serializers.CharField(source='usuario.username', read_only=True)
+    first_name = serializers.CharField(source='usuario.first_name', read_only=True)
+    last_name = serializers.CharField(source='usuario.last_name', read_only=True)
+    
     class Meta:
-        model = User
+        model = CustomerUser
         fields = ['id', 'username', 'first_name', 'last_name']
 
 
@@ -27,7 +31,6 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     """Serializer para salas de chat"""
     participantes = UserChatSerializer(many=True, read_only=True)
     ultima_mensagem = serializers.SerializerMethodField()
-    total_mensagens = serializers.SerializerMethodField()
     mensagens_nao_lidas = serializers.SerializerMethodField()
     
     class Meta:
@@ -35,29 +38,33 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'participantes', 'servico', 'criado_em', 
             'atualizado_em', 'ativo', 'ultima_mensagem_em',
-            'ultima_mensagem', 'total_mensagens', 'mensagens_nao_lidas'
+            'ultima_mensagem', 'mensagens_nao_lidas'
         ]
         read_only_fields = ['id', 'criado_em', 'atualizado_em', 'ultima_mensagem_em']
     
     def get_ultima_mensagem(self, obj):
         """Retorna a última mensagem da sala"""
-        from apps.chat.models.chat import Message
-        ultima = Message.objects.filter(sala_chat=obj).order_by('-enviado_em').first()
+        ultima = obj.mensagens.order_by('-enviado_em').first()
         if ultima:
-            return MessageSerializer(ultima).data
+            return {
+                'id': ultima.id,
+                'conteudo': ultima.conteudo,
+                'enviado_em': ultima.enviado_em,
+                'remetente': {
+                    'id': ultima.remetente.id,
+                    'username': ultima.remetente.usuario.username
+                }
+            }
         return None
     
-    def get_total_mensagens(self, obj):
-        """Retorna total de mensagens na sala"""
-        from apps.chat.models.chat import Message
-        return Message.objects.filter(sala_chat=obj).count()
-    
     def get_mensagens_nao_lidas(self, obj):
-        """Retorna mensagens não lidas pelo usuário atual"""
+        """Retorna quantidade de mensagens não lidas para o usuário atual"""
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            from apps.chat.services.chat_service import ChatService
-            return ChatService.contar_mensagens_nao_lidas(obj, request.user)
+            current_user = request.user.usuario_user
+            return obj.mensagens.filter(
+                lida=False
+            ).exclude(remetente=current_user).count()
         return 0
 
 

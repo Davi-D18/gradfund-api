@@ -29,7 +29,8 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
             # Verificar se usuário tem acesso à sala usando service
             sala = get_object_or_404(ChatRoom, id=room_id)
             
-            if not ChatService.verificar_permissao_sala(sala, self.request.user):
+            customer_user = self.request.user.usuario_user
+            if not ChatService.verificar_permissao_sala(sala, customer_user):
                 return Message.objects.none()
             
             return Message.objects.filter(
@@ -44,18 +45,25 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         mensagem = self.get_object()
         
         # Só pode marcar como lida se não for o remetente
-        if mensagem.remetente != request.user:
-            mensagem.lida = True
-            mensagem.save()
-            
-            return Response(
-                {'message': 'Mensagem marcada como lida'},
-                status=status.HTTP_200_OK
-            )
+        customer_user = request.user.usuario_user
+        if mensagem.remetente != customer_user:
+            if not mensagem.lida:
+                mensagem.lida = True
+                mensagem.save()
+                return Response(
+                    {'message': 'Mensagem marcada como lida'},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {'message': 'Mensagem já estava marcada como lida'},
+                    status=status.HTTP_200_OK
+                )
         
+        # Se for própria mensagem, retornar sucesso sem fazer nada
         return Response(
-            {'error': 'Não é possível marcar própria mensagem como lida'},
-            status=status.HTTP_400_BAD_REQUEST
+            {'message': 'Próprias mensagens não precisam ser marcadas como lidas'},
+            status=status.HTTP_200_OK
         )
     
     @action(detail=False, methods=['patch'])
@@ -65,14 +73,15 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         sala = get_object_or_404(ChatRoom, id=room_id)
         
         # Verificar permissão usando service
-        if not ChatService.verificar_permissao_sala(sala, request.user):
+        customer_user = request.user.usuario_user
+        if not ChatService.verificar_permissao_sala(sala, customer_user):
             return Response(
                 {'error': 'Sem permissão para acessar esta sala'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
         # Usar service para marcar mensagens como lidas
-        mensagens_atualizadas = ChatService.marcar_mensagens_como_lidas(sala, request.user)
+        mensagens_atualizadas = ChatService.marcar_mensagens_como_lidas(sala, customer_user)
         
         return Response(
             {'message': f'{mensagens_atualizadas} mensagens marcadas como lidas'},

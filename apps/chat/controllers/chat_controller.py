@@ -15,7 +15,10 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Retorna apenas salas onde o usuário é participante"""
-        return ChatService.obter_salas_usuario(self.request.user)
+        customer_user = self.request.user.usuario_user
+        return ChatService.obter_salas_usuario(customer_user).prefetch_related(
+            'mensagens__remetente__usuario'
+        )
     
     def get_serializer_class(self):
         """Usa serializer específico para criação"""
@@ -41,7 +44,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         sala = self.get_object()
         
         # Verificar permissão usando service
-        if not ChatService.verificar_permissao_sala(sala, request.user):
+        customer_user = request.user.usuario_user
+        if not ChatService.verificar_permissao_sala(sala, customer_user):
             return Response(
                 {'error': 'Sem permissão para desativar esta sala'},
                 status=status.HTTP_403_FORBIDDEN
@@ -67,7 +71,8 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
             )
         
         # Validar criação
-        validacao = ChatService.validar_criacao_sala(servico_id, request.user)
+        customer_user = request.user.usuario_user
+        validacao = ChatService.validar_criacao_sala(servico_id, customer_user)
         if not validacao['valido']:
             return Response(
                 {'error': validacao['erro']},
@@ -76,7 +81,7 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         
         # Criar ou obter sala
         try:
-            sala = ChatService.criar_ou_obter_sala_por_servico(servico_id, request.user)
+            sala = ChatService.criar_ou_obter_sala_por_servico(servico_id, customer_user)
             return Response(
                 ChatRoomSerializer(sala, context={'request': request}).data,
                 status=status.HTTP_200_OK
