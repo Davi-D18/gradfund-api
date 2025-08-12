@@ -170,12 +170,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
             
-            # Notificar globalmente sobre nova mensagem para atualizar lista de chats
+            # Notificar globalmente sobre nova mensagem (assíncrono)
             if saved_message:
-                logger.info(f"🔔 Iniciando notificação global para mensagem {saved_message.id}")
-                await self.notify_chat_list_update(saved_message)
-            else:
-                logger.error(f"❌ Não foi possível notificar - mensagem não foi salva")
+                logger.info(f"🔔 Enviando notificação assíncrona para mensagem {saved_message.id}")
+                # Executar notificação em background sem bloquear resposta
+                import asyncio
+                asyncio.create_task(self.notify_chat_list_update(saved_message))
         except json.JSONDecodeError as e:
             logger.error(f"JSON inválido: {str(e)}")
             await self.send(text_data=json.dumps({
@@ -302,36 +302,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def notify_chat_list_update(self, message_obj):
         """Notifica participantes sobre nova mensagem para atualizar lista de chats"""
-        participants = await self.get_chat_participants()
-        logger.info(f"🔔 Notificando {len(participants)} participantes sobre nova mensagem na sala {self.room_id}")
-        
-        for participant in participants:
-            logger.info(f"📤 Enviando notificação para usuário {participant.id} no grupo user_{participant.id}")
-            # Enviar para canal pessoal de cada participante
-            await self.channel_layer.group_send(
-                f'user_{participant.id}',
-                {
-                    'type': 'chat_list_update',
-                    'room_id': self.room_id,
-                    'message': {
-                        'id': message_obj.id,
-                        'conteudo': message_obj.conteudo,
-                        'enviado_em': message_obj.enviado_em.isoformat(),
-                        'remetente': {
-                            'id': message_obj.remetente.id,
-                            'username': message_obj.remetente.usuario.username
-                        }
+        try:
+            participants = await self.get_chat_participants()
+            logger.info(f"🔔 Notificando {len(participants)} participantes sobre nova mensagem")
+            
+            # Enviar notificações em paralelo para melhor performance
+            import asyncio
+            tasks = []
+            
+            for participant in participants:
+                logger.info(f"📤 Enviando notificação para CustomerUser {participant.id} no grupo user_{participant.id}")
+                task = self.channel_layer.group_send(
+                    f'user_{participant.id}',
+                    {
+                        'type': 'chat_list_update',
+                        'room_id': self.room_id,
+                        'message_id': message_obj.id,
+                        'content': message_obj.conteudo,
+                        'sender_id': message_obj.remetente.id,
+                        'timestamp': message_obj.enviado_em.isoformat()
                     }
-                }
-            )
+                )
+                tasks.append(task)
+            
+            # Executar todas as notificações em paralelo
+            await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"✅ Notificações enviadas para todos os participantes")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro na notificação global: {str(e)}")
     
     @database_sync_to_async
     def get_chat_participants(self):
-        """Obtém participantes do chat"""
+        """Obtém participantes do chat (otimizado)"""
         try:
-            chat_room = ChatRoom.objects.get(id=self.room_id)
+            chat_room = ChatRoom.objects.select_related().prefetch_related('participantes').get(id=self.room_id)
             return list(chat_room.participantes.all())
         except ChatRoom.DoesNotExist:
+            logger.error(f"Sala {self.room_id} não encontrada")
             return []
 
     @database_sync_to_async
@@ -353,3 +361,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"❌ Erro ao salvar mensagem: {str(e)}")
             return None
+        
+    async def chat_message_notification(self, event):
+        """
+        Handler para notificações de novas mensagens via signal.
+        Envia a mensagem para todos os conectados na sala.
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'new_message_from_signal',
+            'message': event['message']
+        }))

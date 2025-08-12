@@ -1,17 +1,41 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from apps.authentication.models import CustomerUser
 from apps.chat.models.chat import ChatRoom, Message
 
 
 class UserChatSerializer(serializers.ModelSerializer):
     """Serializer básico para usuário no contexto do chat"""
-    username = serializers.CharField(source='usuario.username', read_only=True)
-    first_name = serializers.CharField(source='usuario.first_name', read_only=True)
-    last_name = serializers.CharField(source='usuario.last_name', read_only=True)
+    usuario = serializers.SerializerMethodField()
     
     class Meta:
         model = CustomerUser
-        fields = ['id', 'username', 'first_name', 'last_name']
+        fields = ['id', 'usuario']
+    
+    def get_usuario(self, obj):
+        """Retorna dados do usuário Django relacionado"""
+        if obj.usuario:
+            first_name = obj.usuario.first_name or ''
+            last_name = obj.usuario.last_name or ''
+            username = obj.usuario.username or ''
+            
+            # Garantir que sempre tenha um nome para exibir
+            display_name = ''
+            if first_name and last_name:
+                display_name = f"{first_name} {last_name}"
+            elif first_name:
+                display_name = first_name
+            else:
+                display_name = username
+            
+            return {
+                'id': obj.usuario.id,
+                'username': username,
+                'first_name': first_name,
+                'last_name': last_name,
+                'display_name': display_name
+            }
+        return None
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -52,7 +76,17 @@ class ChatRoomSerializer(serializers.ModelSerializer):
                 'enviado_em': ultima.enviado_em,
                 'remetente': {
                     'id': ultima.remetente.id,
-                    'username': ultima.remetente.usuario.username
+                    'usuario': {
+                        'id': ultima.remetente.usuario.id,
+                        'username': ultima.remetente.usuario.username,
+                        'first_name': ultima.remetente.usuario.first_name or '',
+                        'last_name': ultima.remetente.usuario.last_name or '',
+                        'display_name': (
+                            f"{ultima.remetente.usuario.first_name} {ultima.remetente.usuario.last_name}".strip()
+                            if ultima.remetente.usuario.first_name or ultima.remetente.usuario.last_name
+                            else ultima.remetente.usuario.username
+                        )
+                    }
                 }
             }
         return None
@@ -79,20 +113,21 @@ class CreateChatRoomSerializer(serializers.ModelSerializer):
     def validate_participante_id(self, value):
         """Valida se o participante existe"""
         try:
-            User.objects.get(id=value)
+            CustomerUser.objects.get(id=value)
             return value
-        except User.DoesNotExist:
+        except CustomerUser.DoesNotExist:
             raise serializers.ValidationError("Usuário não encontrado")
     
     def create(self, validated_data):
         """Cria sala de chat com os participantes"""
         participante_id = validated_data.pop('participante_id')
-        participante = User.objects.get(id=participante_id)
+        participante = CustomerUser.objects.get(id=participante_id)
         
         # Criar sala
         sala = ChatRoom.objects.create(**validated_data)
         
         # Adicionar participantes
-        sala.participantes.add(self.context['request'].user, participante)
+        current_user = self.context['request'].user.usuario_user
+        sala.participantes.add(current_user, participante)
         
         return sala

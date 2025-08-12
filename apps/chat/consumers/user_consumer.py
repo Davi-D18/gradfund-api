@@ -13,10 +13,18 @@ class UserConsumer(AsyncWebsocketConsumer):
         
         # Usar usuário do middleware JWT
         self.user = self.scope.get('user')
-        if not self.user or str(self.user.id) != str(self.user_id):
-            logger.error("Conexão rejeitada: usuário não autorizado")
+        if not self.user:
+            logger.error("Conexão rejeitada: usuário não autenticado")
             await self.close(code=4001)
             return
+        
+        # Verificar se o user_id corresponde ao CustomerUser.id
+        if str(self.user.id) != str(self.user_id):
+            logger.error(f"Conexão rejeitada: CustomerUser ID {self.user.id} tentando acessar canal do usuário {self.user_id}")
+            await self.close(code=4001)
+            return
+        
+        logger.info(f"✅ CustomerUser {self.user.id} autorizado para canal user_{self.user_id}")
         
         # Join user group
         await self.channel_layer.group_add(
@@ -38,9 +46,15 @@ class UserConsumer(AsyncWebsocketConsumer):
     async def chat_list_update(self, event):
         """Envia atualização da lista de chats"""
         logger.info(f"📨 UserConsumer enviando chat_list_update para usuário {self.user_id}")
-        await self.send(text_data=json.dumps({
-            'type': 'chat_list_update',
-            'room_id': event['room_id'],
-            'message': event['message']
-        }))
-        logger.info(f"✅ chat_list_update enviado com sucesso para usuário {self.user_id}")
+        try:
+            await self.send(text_data=json.dumps({
+                'type': 'new_message',
+                'room_id': event['room_id'],
+                'message_id': event['message_id'],
+                'content': event['content'],
+                'sender_id': event['sender_id'],
+                'timestamp': event['timestamp']
+            }))
+            logger.info(f"✅ chat_list_update enviado com sucesso para usuário {self.user_id}")
+        except Exception as e:
+            logger.error(f"❌ Erro ao enviar chat_list_update para usuário {self.user_id}: {str(e)}")
