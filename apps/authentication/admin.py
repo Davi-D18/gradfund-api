@@ -23,13 +23,13 @@ class CustomerUserAdmin(admin.ModelAdmin):
     list_display = ("id", "usuario_link", "status_visual", "tipo_usuario", "universidade", "curso", "ano_formatura", "total_servicos")
     list_filter = ("tipo_usuario", "universidade", "curso", "ano_formatura")
 
-    search_fields = ("usuario__username", "usuario__email", "contato")
+    search_fields = ("usuario__username", "usuario__email",)
     readonly_fields = ("total_servicos", "servicos_ativos", "data_ultimo_servico")
     inlines = [ServiceInline]
     
     fieldsets = (
         ('Informações Básicas', {
-            'fields': ('usuario', 'tipo_usuario', 'contato')
+            'fields': ('usuario', 'tipo_usuario',)
         }),
         ('Dados Acadêmicos', {
             'fields': ('universidade', 'curso', 'ano_formatura'),

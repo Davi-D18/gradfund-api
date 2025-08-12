@@ -14,11 +14,10 @@ class UserSerializer(serializers.ModelSerializer):
     universidade = serializers.SlugRelatedField(queryset=Universidade.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
     curso = serializers.SlugRelatedField(queryset=Curso.objects.all(), slug_field='nome', required=False, allow_null=True, write_only=True)
     ano_formatura = serializers.IntegerField(required=False, allow_null=True, write_only=True)
-    contato = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = get_user_model()
-        fields = ['username', 'email', 'password', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura', 'contato']
+        fields = ['username', 'email', 'password', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura']
         extra_kwargs = {
             'username': {'required': True, 'error_messages': {'required': 'O nome de usuário é obrigatório'}},
             'email': {'required': True, 'error_messages': {'required': 'O email é obrigatório'}},
@@ -86,7 +85,6 @@ class UserSerializer(serializers.ModelSerializer):
             'universidade': validated_data.pop('universidade', None),
             'curso': validated_data.pop('curso', None),
             'ano_formatura': validated_data.pop('ano_formatura', None),
-            'contato': validated_data.pop('contato', None)
         }
         
         # Criar User
@@ -176,7 +174,7 @@ class CustomerUserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomerUser
-        fields = ['id', 'usuario', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura', 'contato']
+        fields = ['id', 'usuario', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura']
 
 
 class CustomerUserUpdateSerializer(serializers.ModelSerializer):
@@ -202,7 +200,7 @@ class CustomerUserUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomerUser
-        fields = ['username', 'email', 'first_name', 'last_name', 'universidade_id', 'curso_id', 'ano_formatura', 'contato']
+        fields = ['username', 'email', 'first_name', 'last_name', 'universidade_id', 'curso_id', 'ano_formatura']
     
     def update(self, instance, validated_data):
         # Separar dados do User e CustomerUser

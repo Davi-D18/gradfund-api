@@ -46,7 +46,7 @@ class EstudanteDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomerUser
-        fields = ['id', 'usuario', 'universidade', 'curso', 'contato']
+        fields = ['id', 'usuario', 'universidade', 'curso']
 
 
 class ServiceSerializer(serializers.ModelSerializer):
