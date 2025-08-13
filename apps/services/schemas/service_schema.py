@@ -11,13 +11,13 @@ class CustomerUserNestedSerializer(serializers.ModelSerializer):
         fields = ['username', 'first_name', 'last_name']
 
 
-class UniversidadeNestedSerializer(serializers.ModelSerializer):
+class UniversidadeNestedServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Universidade
         fields = ['nome', 'sigla']
 
 
-class CursoNestedSerializer(serializers.ModelSerializer):
+class CursoNestedServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Curso
         fields = ['nome']
@@ -31,8 +31,8 @@ class TypeServiceNestedSerializer(serializers.ModelSerializer):
 
 class EstudanteNestedSerializer(serializers.ModelSerializer):
     usuario = CustomerUserNestedSerializer(read_only=True)
-    universidade = UniversidadeNestedSerializer(read_only=True)
-    curso = CursoNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedServiceSerializer(read_only=True)
+    curso = CursoNestedServiceSerializer(read_only=True)
     
     class Meta:
         model = CustomerUser
@@ -41,8 +41,8 @@ class EstudanteNestedSerializer(serializers.ModelSerializer):
 
 class EstudanteDetailSerializer(serializers.ModelSerializer):
     usuario = CustomerUserNestedSerializer(read_only=True)
-    universidade = UniversidadeNestedSerializer(read_only=True)
-    curso = CursoNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedServiceSerializer(read_only=True)
+    curso = CursoNestedServiceSerializer(read_only=True)
     
     class Meta:
         model = CustomerUser
