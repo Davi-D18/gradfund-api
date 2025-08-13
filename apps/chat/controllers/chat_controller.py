@@ -15,6 +15,9 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Retorna apenas salas onde o usuário é participante"""
+        if getattr(self, 'swagger_fake_view', False):
+            return ChatRoom.objects.none()
+
         customer_user = self.request.user.usuario_user
         return ChatService.obter_salas_usuario(customer_user).prefetch_related(
             'mensagens__remetente__usuario'
