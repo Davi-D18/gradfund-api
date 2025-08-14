@@ -1,38 +1,15 @@
 from rest_framework import serializers
 from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
-from apps.academic.models.academics import Universidade, Curso
-from django.contrib.auth.models import User
-
-
-class CustomerUserNestedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'first_name', 'last_name']
-
-
-class UniversidadeNestedServiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Universidade
-        fields = ['nome', 'sigla']
-
-
-class CursoNestedServiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Curso
-        fields = ['nome']
-
-
-class TypeServiceNestedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TypeService
-        fields = ['id', 'nome']
+from common.schemas.user import CustomerUserNestedSerializer, UserNestedSerializer
+from common.schemas.academic import UniversidadeNestedSerializer, CursoNestedSerializer
+from common.schemas.service import TypeServiceNestedSerializer
 
 
 class EstudanteNestedSerializer(serializers.ModelSerializer):
-    usuario = CustomerUserNestedSerializer(read_only=True)
-    universidade = UniversidadeNestedServiceSerializer(read_only=True)
-    curso = CursoNestedServiceSerializer(read_only=True)
+    usuario = UserNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedSerializer(read_only=True)
+    curso = CursoNestedSerializer(read_only=True)
     
     class Meta:
         model = CustomerUser
@@ -40,9 +17,9 @@ class EstudanteNestedSerializer(serializers.ModelSerializer):
 
 
 class EstudanteDetailSerializer(serializers.ModelSerializer):
-    usuario = CustomerUserNestedSerializer(read_only=True)
-    universidade = UniversidadeNestedServiceSerializer(read_only=True)
-    curso = CursoNestedServiceSerializer(read_only=True)
+    usuario = UserNestedSerializer(read_only=True)
+    universidade = UniversidadeNestedSerializer(read_only=True)
+    curso = CursoNestedSerializer(read_only=True)
     
     class Meta:
         model = CustomerUser

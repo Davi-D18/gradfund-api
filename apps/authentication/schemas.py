@@ -4,6 +4,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import CustomerUser
 from .constants.user import USER_TYPE_CHOICES
 from apps.academic.models.academics import Universidade, Curso
+from common.schemas.user import UserNestedSerializer
+from common.schemas.academic import UniversidadeNestedSerializer, CursoNestedSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -147,24 +149,6 @@ class TokenObtainPairSerializer(TokenObtainPairSerializer):
         token['tipo_usuario'] = customer_user.tipo_usuario
             
         return token
-
-
-class UserNestedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = get_user_model()
-        fields = ['username', 'email', 'first_name', 'last_name', 'date_joined']
-
-
-class UniversidadeNestedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Universidade
-        fields = ['id', 'nome', 'sigla']
-
-
-class CursoNestedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Curso
-        fields = ['id', 'nome']
 
 
 class CustomerUserProfileSerializer(serializers.ModelSerializer):
