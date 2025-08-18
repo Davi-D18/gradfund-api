@@ -53,6 +53,6 @@ else:
 "
 
 # 6. Inicia o Gunicorn na porta definida pelo Render
-echo "🚀 Iniciando Gunicorn..."
+echo "🚀 Iniciando Daphne..."
 PORT=${PORT:-8000}
-exec gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+exec daphne -b 0.0.0.0 -p "$PORT" core.asgi:application
