@@ -55,4 +55,4 @@ else:
 # 6. Inicia o Gunicorn na porta definida pelo Render
 echo "🚀 Iniciando Daphne..."
 PORT=${PORT:-8000}
-exec daphne -b 0.0.0.0 -p "$PORT" core.asgi:application
+exec daphne -b 0.0.0.0 -p $PORT --proxy-headers core.asgi:application
