@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from .base import * # noqa: F403
 
 DEBUG = False
@@ -47,6 +48,11 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=45),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
