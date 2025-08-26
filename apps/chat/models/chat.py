@@ -1,9 +1,10 @@
 from django.db import models
 from apps.authentication.models import CustomerUser
 from apps.services.models.services import Service
+from core.models import UUIDModel
 
 
-class ChatRoom(models.Model):
+class ChatRoom(UUIDModel):
     participantes = models.ManyToManyField(CustomerUser, related_name='salas_chat')
     servico = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='salas_chat')
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -20,7 +21,7 @@ class ChatRoom(models.Model):
         return f"Chat - {self.servico.titulo}"
 
 
-class Message(models.Model):
+class Message(UUIDModel):
     TIPOS_MENSAGEM = [
         ('text', 'Texto'),
         ('image', 'Imagem'),

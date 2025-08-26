@@ -1,8 +1,9 @@
 from django.db import models
 from utils.formatters import StringFormatter
+from core.models import UUIDModel
 
 
-class Universidade(models.Model):
+class Universidade(UUIDModel):
     nome = models.CharField(max_length=255, blank=True, null=True)
     sigla = models.CharField(max_length=20, blank=True, null=True, unique=True)
     cidade = models.CharField(max_length=40, blank=True, null=True)
@@ -31,7 +32,7 @@ class Universidade(models.Model):
         return self.nome
 
 
-class Curso(models.Model):
+class Curso(UUIDModel):
     nome = models.CharField(max_length=200, blank=True, null=True)
 
     def clean(self):

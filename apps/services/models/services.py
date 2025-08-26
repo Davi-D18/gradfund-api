@@ -1,9 +1,10 @@
 from django.db import models
 from apps.authentication.models import CustomerUser
 from utils.formatters import StringFormatter
+from core.models import UUIDModel
 
 
-class TypeService(models.Model):
+class TypeService(UUIDModel):
     nome = models.CharField(max_length=120)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -26,7 +27,7 @@ class TypeService(models.Model):
 
 
 
-class Service(models.Model):
+class Service(UUIDModel):
     estudante = models.ForeignKey(CustomerUser, on_delete=models.CASCADE, related_name='services_customer_user')
     titulo = models.CharField(max_length=120)
     descricao = models.TextField()
