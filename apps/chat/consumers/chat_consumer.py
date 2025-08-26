@@ -164,9 +164,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'chat_message',
                     'message': message,
-                    'user_id': user_id,
-                    'username': f'CustomerUser_{self.user.id}',
-                    'message_id': message_id
+                    'user_id': str(user_id) if user_id is not None else None,
+                    'username': f'CustomerUser_{str(self.user.id)}',
+                    'message_id': str(message_id) if message_id is not None else None
                 }
             )
             
@@ -196,9 +196,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
-            'user_id': user_id,
+            'user_id': str(user_id) if user_id is not None else None,
             'username': username,
-            'message_id': message_id,
+            'message_id': str(message_id) if message_id is not None else None,
             'type': 'message'
         }))
         
@@ -226,8 +226,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Envia evento de mensagem lida para o WebSocket"""
         await self.send(text_data=json.dumps({
             'type': 'message_read',
-            'message_id': event['message_id'],
-            'read_by_user_id': event['read_by_user_id']
+            'message_id': str(event['message_id']) if event.get('message_id') is not None else None,
+            'read_by_user_id': str(event['read_by_user_id']) if event.get('read_by_user_id') is not None else None
         }))
     
     async def auto_mark_as_read(self, message_id):
@@ -239,8 +239,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     'type': 'message_read_event',
-                    'message_id': message_id,
-                    'read_by_user_id': self.user.id
+                    'message_id': str(message_id) if message_id is not None else None,
+                    'read_by_user_id': str(self.user.id) if self.user.id is not None else None
                 }
             )
     
