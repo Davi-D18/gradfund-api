@@ -1,65 +1,54 @@
 from rest_framework import permissions
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from apps.services.schemas.service_schema import ServiceSerializer, ServiceDetailSerializer, TypeServiceSerializer
+from apps.services.schemas.service_schema import (
+    ServiceSerializer,
+    ServiceDetailSerializer,
+    TypeServiceSerializer,
+)
 from apps.services.models.services import Service, TypeService
 from apps.authentication.models import CustomerUser
-from apps.services.permissions import IsOwner
+from apps.services.permissions import IsServiceOwner, CanViewInactiveService
 
 
 class ServiceViewSet(ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
-    
+    permission_classes = [CanViewInactiveService]
+
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == "retrieve":
             return ServiceDetailSerializer
         return ServiceSerializer
 
     def get_permissions(self):
-        # nas ações retrieve/update/partial_update/destroy, aplica também IsOwner
-        if self.action in ['update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated(), IsOwner()]
-        return super().get_permissions()
+        if self.action in ["update", "partial_update", "destroy"]:
+            return [permissions.IsAuthenticated(), IsServiceOwner()]
+        return [perm() for perm in self.permission_classes]
 
     def get_queryset(self):
         qs = Service.objects.select_related(
-            'estudante__usuario',
-            'estudante__universidade',
-            'estudante__curso',
-            'tipo_servico',
+            "estudante__usuario",
+            "estudante__universidade",
+            "estudante__curso",
+            "tipo_servico",
         )
 
-        # rota padrão de listagem: só os ativos, de qualquer usuário
-        if self.action =='list':
+        if self.action == "list":
             return qs.filter(ativo=True)
-
         return qs
 
-    
-    def retrieve(self, request, *args, **kwargs):
-        service = self.get_object()
-
-        if not service.ativo:
-            user_cust = get_object_or_404(CustomerUser, usuario=request.user)
-            if user_cust.tipo_usuario == 'publico_externo':
-                raise PermissionDenied({
-                    'permission': 'Você não tem permissão para ver esse serviço'
-                })
-
-        return super().retrieve(request, *args, **kwargs)
-
-    @action(detail=False, methods=['get'], url_path='meus')
+    @action(detail=False, methods=["get"], url_path="meus")
     def buscar_servicos_usuario(self, request):
+        estudante = get_object_or_404(CustomerUser, usuario=request.user)
         qs = Service.objects.select_related(
-            'estudante__usuario',
-            'estudante__universidade',
-            'estudante__curso',
-            'tipo_servico'
-        ).filter(estudante=get_object_or_404(CustomerUser, usuario=request.user))
+            "estudante__usuario",
+            "estudante__universidade",
+            "estudante__curso",
+            "tipo_servico",
+        ).filter(estudante=estudante)
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
