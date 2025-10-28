@@ -29,11 +29,11 @@ COPY . .
 RUN mkdir -p staticfiles media
 
 # Dar permissão de execução ao entrypoint
-RUN chmod +x entrypoint.sh
+RUN chmod +x ./scripts/entrypoint.sh
 
 # Expor porta 8000
 EXPOSE 8000
 
 # Executar entrypoint
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["./scripts/entrypoint.sh"]
 
