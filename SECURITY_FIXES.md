@@ -165,7 +165,6 @@
 
 **Subtarefas:**
 - [ ] 10.1 **Chat Models**
-  - [ ] 10.1.1 Alterar `('text', 'Texto')` para `('texto', 'Texto')`
   - [ ] 10.1.2 Verificar impacto em dados existentes
   - [ ] 10.1.3 Criar migração de dados se necessário
   - [ ] 10.1.4 Atualizar frontend para usar novos valores
