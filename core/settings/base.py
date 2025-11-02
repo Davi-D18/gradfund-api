@@ -30,7 +30,8 @@ INSTALLED_APPS = [
     'apps.authentication',
     'apps.academic',
     'apps.services',
-    'apps.chat'
+    'apps.chat',
+    'apps.payments'
 ]
 
 MIDDLEWARE = [
@@ -149,6 +150,18 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+# Mercado Pago
+MERCADOPAGO = {
+    'ACCESS_TOKEN': os.getenv('MERCADOPAGO_ACCESS_TOKEN'),
+    'PUBLIC_KEY': os.getenv('MERCADOPAGO_PUBLIC_KEY'),
+    'WEBHOOK_SECRET': os.getenv('MERCADOPAGO_WEBHOOK_SECRET'),
+    'ENVIRONMENT': os.getenv('MERCADOPAGO_ENVIRONMENT', 'sandbox'),
+}
+
+# GradFund
+GRADFUND_PIX_KEY = os.getenv('GRADFUND_PIX_KEY')
+GRADFUND_COMMISSION_RATE = 0.07  # 7%
 
 JAZZMIN_SETTINGS = {
     "site_title": "GradFund Admin",
