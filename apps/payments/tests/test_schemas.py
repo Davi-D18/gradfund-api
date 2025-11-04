@@ -24,7 +24,8 @@ class PaymentCreateSerializerTest(TestCase):
         )
         self.universitario = CustomerUser.objects.create(
             usuario=self.user_universitario,
-            tipo_usuario="universitario"
+            tipo_usuario="universitario",
+            mp_access_token="TEST-123456789"
         )
         
         self.tipo_servico = TypeService.objects.create(nome="Aulas")
@@ -100,7 +101,8 @@ class PaymentDetailSerializerTest(TestCase):
         
         self.universitario = CustomerUser.objects.create(
             usuario=self.user_universitario,
-            tipo_usuario="universitario"
+            tipo_usuario="universitario",
+            mp_access_token="TEST-123456789"
         )
         self.publico_externo = CustomerUser.objects.create(
             usuario=self.user_publico,
@@ -162,7 +164,8 @@ class PaymentListSerializerTest(TestCase):
         
         self.universitario = CustomerUser.objects.create(
             usuario=self.user_universitario,
-            tipo_usuario="universitario"
+            tipo_usuario="universitario",
+            mp_access_token="TEST-123456789"
         )
         self.publico_externo = CustomerUser.objects.create(
             usuario=self.user_publico,

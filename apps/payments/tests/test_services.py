@@ -103,7 +103,8 @@ class PaymentServiceTest(TestCase):
             usuario=self.user_universitario,
             tipo_usuario="universitario",
             universidade=self.universidade,
-            curso=self.curso
+            curso=self.curso,
+            mp_access_token="TEST-123456789"  # Token fake para testes
         )
         self.publico_externo = CustomerUser.objects.create(
             usuario=self.user_publico,
@@ -122,32 +123,35 @@ class PaymentServiceTest(TestCase):
         
         self.payment_service = PaymentService()
     
-    def test_criar_pagamento_sucesso(self):
+    @patch('apps.payments.services.payment_service.MercadoPagoService')
+    def test_criar_pagamento_sucesso(self, mock_mp_service_class):
         """Testa criação de pagamento com sucesso"""
-        with patch.object(self.payment_service.mp_service, 'criar_preferencia') as mock_criar_pref:
-            mock_criar_pref.return_value = {
-                'status': 201,
-                'response': {
-                    'id': 'pref_123',
-                    'init_point': 'https://mercadopago.com/checkout',
-                    'sandbox_init_point': 'https://sandbox.mercadopago.com/checkout'
-                }
+        # Mock da instância do MercadoPagoService
+        mock_mp_instance = Mock()
+        mock_mp_instance.criar_preferencia.return_value = {
+            'status': 201,
+            'response': {
+                'id': 'pref_123',
+                'init_point': 'https://mercadopago.com/checkout',
+                'sandbox_init_point': 'https://sandbox.mercadopago.com/checkout'
             }
-            
-            result = self.payment_service.criar_pagamento(
-                contratante=self.publico_externo,
-                servico_id=self.servico.id
-            )
-            
-            self.assertIn('payment_id', result)
-            self.assertIn('checkout_url', result)
-            self.assertEqual(result['valor_total'], Decimal('50.00'))
-            
-            # Verificar se pagamento foi criado no banco
-            payment = Payment.objects.get(id=result['payment_id'])
-            self.assertEqual(payment.contratante, self.publico_externo)
-            self.assertEqual(payment.prestador, self.universitario)
-            self.assertEqual(payment.servico, self.servico)
+        }
+        mock_mp_service_class.return_value = mock_mp_instance
+        
+        result = self.payment_service.criar_pagamento(
+            contratante=self.publico_externo,
+            servico_id=self.servico.id
+        )
+        
+        self.assertIn('payment_id', result)
+        self.assertIn('checkout_url', result)
+        self.assertEqual(result['valor_total'], Decimal('50.00'))
+        
+        # Verificar se pagamento foi criado no banco
+        payment = Payment.objects.get(id=result['payment_id'])
+        self.assertEqual(payment.contratante, self.publico_externo)
+        self.assertEqual(payment.prestador, self.universitario)
+        self.assertEqual(payment.servico, self.servico)
     
     def test_criar_pagamento_servico_inexistente(self):
         """Testa erro ao tentar pagar serviço inexistente"""
@@ -186,7 +190,8 @@ class PaymentServiceTest(TestCase):
             "próprio serviço" in error_msg or "público externo" in error_msg
         )
     
-    def test_cancelar_pagamentos_pendentes_anteriores(self):
+    @patch('apps.payments.services.payment_service.MercadoPagoService')
+    def test_cancelar_pagamentos_pendentes_anteriores(self, mock_mp_service_class):
         """Testa cancelamento de pagamentos pendentes anteriores"""
         # Criar pagamento pendente anterior
         payment_anterior = Payment.objects.create(
@@ -197,20 +202,22 @@ class PaymentServiceTest(TestCase):
             status='pending'
         )
         
-        with patch.object(self.payment_service.mp_service, 'criar_preferencia') as mock_criar_pref:
-            mock_criar_pref.return_value = {
-                'status': 201,
-                'response': {
-                    'id': 'pref_123',
-                    'init_point': 'https://mercadopago.com/checkout',
-                    'sandbox_init_point': 'https://sandbox.mercadopago.com/checkout'
-                }
+        # Mock da instância do MercadoPagoService
+        mock_mp_instance = Mock()
+        mock_mp_instance.criar_preferencia.return_value = {
+            'status': 201,
+            'response': {
+                'id': 'pref_123',
+                'init_point': 'https://mercadopago.com/checkout',
+                'sandbox_init_point': 'https://sandbox.mercadopago.com/checkout'
             }
-            
-            self.payment_service.criar_pagamento(
-                contratante=self.publico_externo,
-                servico_id=self.servico.id
-            )
+        }
+        mock_mp_service_class.return_value = mock_mp_instance
+        
+        self.payment_service.criar_pagamento(
+            contratante=self.publico_externo,
+            servico_id=self.servico.id
+        )
         
         # Verificar se pagamento anterior foi cancelado
         payment_anterior.refresh_from_db()
