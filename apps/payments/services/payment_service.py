@@ -57,7 +57,7 @@ class PaymentService:
             'valor_total': payment.valor_total,
             'contratante_nome': contratante.usuario.get_full_name() or contratante.usuario.username,
             'contratante_email': contratante.usuario.email,
-            'webhook_url': f'/api/v1/payments/webhook/',
+            'webhook_url': f'{settings.BASE_URL}/api/v1/payments/webhook/',
         }
         
         mp_response = mp_service.criar_preferencia(payment_data)
@@ -93,8 +93,9 @@ class PaymentService:
             payment_id = webhook_data.get('data', {}).get('id')
             
             if payment_id:
-                # Consultar pagamento no Mercado Pago
-                mp_response = self.mp_service.consultar_pagamento(payment_id)
+                # Usar token da plataforma para consultar webhook
+                mp_service = MercadoPagoService()  # Token da plataforma
+                mp_response = mp_service.consultar_pagamento(payment_id)
                 
                 if mp_response['status'] == 200:
                     payment_info = mp_response['response']
