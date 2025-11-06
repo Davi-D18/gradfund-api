@@ -4,11 +4,14 @@ from decimal import Decimal
 
 
 class MercadoPagoService:
-    def __init__(self):
-        self.sdk = mercadopago.SDK(settings.MERCADOPAGO['ACCESS_TOKEN'])
+    def __init__(self, access_token=None):
+        token = access_token or settings.MERCADOPAGO['ACCESS_TOKEN']
+        self.sdk = mercadopago.SDK(token)
     
     def criar_preferencia(self, payment_data):
-        """Cria preferência de pagamento no Mercado Pago"""
+        """Cria preferência de pagamento no Mercado Pago com split"""
+        split_data = self.calcular_split_pagamento(payment_data['valor_total'])
+        
         preference_data = {
             "items": [
                 {
@@ -33,7 +36,8 @@ class MercadoPagoService:
             "payment_methods": {
                 "excluded_payment_types": [],
                 "installments": 12
-            }
+            },
+            "marketplace_fee": float(split_data['comissao_plataforma'])
         }
         
         response = self.sdk.preference().create(preference_data)

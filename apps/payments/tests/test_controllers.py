@@ -33,7 +33,8 @@ class PaymentViewSetTest(TestCase):
             usuario=self.user_universitario,
             tipo_usuario="universitario",
             universidade=self.universidade,
-            curso=self.curso
+            curso=self.curso,
+            mp_access_token="TEST-123456789"
         )
         self.publico_externo = CustomerUser.objects.create(
             usuario=self.user_publico,

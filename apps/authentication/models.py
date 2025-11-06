@@ -11,6 +11,10 @@ class CustomerUser(UUIDModel):
     universidade = models.ForeignKey(Universidade, on_delete=models.PROTECT, blank=True, null=True)
     curso = models.ForeignKey(Curso, on_delete=models.PROTECT, blank=True, null=True)
     ano_formatura = models.IntegerField(blank=True, null=True)
+    # Mercado Pago OAuth
+    mp_access_token = models.CharField(max_length=255, blank=True, null=True)
+    mp_refresh_token = models.CharField(max_length=255, blank=True, null=True)
+    mp_user_id = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         verbose_name = "Perfil de Usuário"

@@ -43,6 +43,13 @@ class PaymentService:
             valor_total=servico.preco / 100  # Converter centavos para reais
         )
         
+        # Verificar se universitário tem token MP
+        if not servico.estudante.mp_access_token:
+            raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
+        
+        # Usar token do universitário para criar preferência
+        mp_service = MercadoPagoService(servico.estudante.mp_access_token)
+        
         # Criar preferência no Mercado Pago
         payment_data = {
             'payment_id': payment.id,
@@ -50,10 +57,10 @@ class PaymentService:
             'valor_total': payment.valor_total,
             'contratante_nome': contratante.usuario.get_full_name() or contratante.usuario.username,
             'contratante_email': contratante.usuario.email,
-            'webhook_url': f'/api/v1/payments/webhook/',
+            'webhook_url': f'{settings.BASE_URL}/api/v1/payments/webhook/',
         }
         
-        mp_response = self.mp_service.criar_preferencia(payment_data)
+        mp_response = mp_service.criar_preferencia(payment_data)
         
         if mp_response['status'] == 201:
             preference = mp_response['response']
@@ -86,8 +93,9 @@ class PaymentService:
             payment_id = webhook_data.get('data', {}).get('id')
             
             if payment_id:
-                # Consultar pagamento no Mercado Pago
-                mp_response = self.mp_service.consultar_pagamento(payment_id)
+                # Usar token da plataforma para consultar webhook
+                mp_service = MercadoPagoService()  # Token da plataforma
+                mp_response = mp_service.consultar_pagamento(payment_id)
                 
                 if mp_response['status'] == 200:
                     payment_info = mp_response['response']

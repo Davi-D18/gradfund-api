@@ -33,7 +33,8 @@ class CanCreatePaymentTest(TestCase):
         )
         self.universitario = CustomerUser.objects.create(
             usuario=self.user_universitario,
-            tipo_usuario="universitario"
+            tipo_usuario="universitario",
+            mp_access_token="TEST-123456789"
         )
     
     def test_post_permission_publico_externo(self):
@@ -133,7 +134,8 @@ class IsPaymentParticipantTest(TestCase):
         )
         self.universitario = CustomerUser.objects.create(
             usuario=self.user_universitario,
-            tipo_usuario="universitario"
+            tipo_usuario="universitario",
+            mp_access_token="TEST-123456789"
         )
         self.outro_usuario = CustomerUser.objects.create(
             usuario=self.user_outro,

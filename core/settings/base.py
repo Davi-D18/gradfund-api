@@ -152,9 +152,14 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 MERCADOPAGO = {
     'ACCESS_TOKEN': os.getenv('MERCADOPAGO_ACCESS_TOKEN'),
     'PUBLIC_KEY': os.getenv('MERCADOPAGO_PUBLIC_KEY'),
+    'APPLICATION_ID': os.getenv('MERCADOPAGO_APPLICATION_ID'),
+    'CLIENT_SECRET': os.getenv('MERCADOPAGO_CLIENT_SECRET'),
     'WEBHOOK_SECRET': os.getenv('MERCADOPAGO_WEBHOOK_SECRET'),
     'ENVIRONMENT': os.getenv('MERCADOPAGO_ENVIRONMENT', 'sandbox'),
 }
+
+# Base URL para callbacks OAuth
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
 
 # GradFund
 GRADFUND_PIX_KEY = os.getenv('GRADFUND_PIX_KEY')
