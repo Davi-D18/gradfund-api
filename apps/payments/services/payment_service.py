@@ -43,12 +43,18 @@ class PaymentService:
             valor_total=servico.preco / 100  # Converter centavos para reais
         )
         
-        # Verificar se universitário tem token MP
-        if not servico.estudante.mp_access_token:
-            raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
+        # Para desenvolvimento, usar token das configurações
+        # Em produção, usar token OAuth do universitário
+        from django.conf import settings
         
-        # Usar token do universitário para criar preferência
-        mp_service = MercadoPagoService(servico.estudante.mp_access_token)
+        if settings.DEBUG:
+            # Desenvolvimento: usar token das configurações
+            mp_service = MercadoPagoService()
+        else:
+            # Produção: verificar se universitário tem token MP
+            if not servico.estudante.mp_access_token:
+                raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
+            mp_service = MercadoPagoService(servico.estudante.mp_access_token)
         
         # Criar preferência no Mercado Pago
         payment_data = {
@@ -62,7 +68,7 @@ class PaymentService:
         
         mp_response = mp_service.criar_preferencia(payment_data)
         
-        if mp_response['status'] == 201:
+        if mp_response.get('status') == 201:
             preference = mp_response['response']
             payment.mercadopago_preference_id = preference['id']
             payment.save()
@@ -77,7 +83,7 @@ class PaymentService:
         else:
             payment.status = 'rejected'
             payment.save()
-            raise Exception("Erro ao criar preferência no Mercado Pago")
+            raise Exception(f"Erro ao criar preferência no Mercado Pago. Status: {mp_response.get('status')}, Response: {mp_response}")
     
     @transaction.atomic
     def processar_webhook(self, webhook_data):

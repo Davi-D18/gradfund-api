@@ -9,9 +9,7 @@ class MercadoPagoService:
         self.sdk = mercadopago.SDK(token)
     
     def criar_preferencia(self, payment_data):
-        """Cria preferência de pagamento no Mercado Pago com split"""
-        split_data = self.calcular_split_pagamento(payment_data['valor_total'])
-        
+        """Cria preferência de pagamento no Mercado Pago"""
         preference_data = {
             "items": [
                 {
@@ -26,18 +24,12 @@ class MercadoPagoService:
                 "email": payment_data['contratante_email']
             },
             "back_urls": {
-                "success": payment_data.get('success_url', ''),
-                "failure": payment_data.get('failure_url', ''),
-                "pending": payment_data.get('pending_url', '')
+                "success": payment_data.get('success_url', 'http://localhost:3000/payment/success'),
+                "failure": payment_data.get('failure_url', 'http://localhost:3000/payment/failure'),
+                "pending": payment_data.get('pending_url', 'http://localhost:3000/payment/pending')
             },
-            "auto_return": "approved",
-            "notification_url": payment_data.get('webhook_url', ''),
             "external_reference": str(payment_data['payment_id']),
-            "payment_methods": {
-                "excluded_payment_types": [],
-                "installments": 12
-            },
-            "marketplace_fee": float(split_data['comissao_plataforma'])
+            "notification_url": payment_data.get('webhook_url', '')
         }
         
         response = self.sdk.preference().create(preference_data)

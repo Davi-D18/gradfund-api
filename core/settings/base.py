@@ -165,6 +165,10 @@ BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
 GRADFUND_PIX_KEY = os.getenv('GRADFUND_PIX_KEY')
 GRADFUND_COMMISSION_RATE = 0.07  # 7%
 
+# URLs
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
 JAZZMIN_SETTINGS = {
     "site_title": "GradFund Admin",
 
