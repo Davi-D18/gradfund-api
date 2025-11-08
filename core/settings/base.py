@@ -147,6 +147,7 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@gradfund.local')
 
 # Mercado Pago
 MERCADOPAGO = {
@@ -156,6 +157,9 @@ MERCADOPAGO = {
     'CLIENT_SECRET': os.getenv('MERCADOPAGO_CLIENT_SECRET'),
     'WEBHOOK_SECRET': os.getenv('MERCADOPAGO_WEBHOOK_SECRET'),
     'ENVIRONMENT': os.getenv('MERCADOPAGO_ENVIRONMENT', 'sandbox'),
+    'FAKE_PAYOUTS': os.getenv('MERCADOPAGO_FAKE_PAYOUTS', 'true').lower() == 'true',
+    'COLLECTOR_ID': os.getenv('MERCADOPAGO_COLLECTOR_ID'),
+    'PAYOUT_BASE_URL': os.getenv('MERCADOPAGO_PAYOUT_BASE_URL', 'https://api.mercadopago.com'),
 }
 
 # Base URL para callbacks OAuth

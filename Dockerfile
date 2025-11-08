@@ -28,12 +28,17 @@ COPY . .
 # Criar diretório para arquivos estáticos e media
 RUN mkdir -p staticfiles media
 
-# Dar permissão de execução ao entrypoint
-RUN chmod +x ./scripts/entrypoint.sh
+# Dar permissão de execução ao entrypoint e converter CRLF para LF
+RUN sed -i 's/\r$//' ./scripts/entrypoint.sh && \
+    chmod +x ./scripts/entrypoint.sh
 
 # Expor porta 8000
 EXPOSE 8000
 
-# Executar entrypoint
-ENTRYPOINT ["./scripts/entrypoint.sh"]
+# Criar script wrapper que converte e executa
+RUN echo '#!/bin/bash\nsed -i "s/\\r$//" ./scripts/entrypoint.sh\nbash ./scripts/entrypoint.sh "$@"' > /entrypoint-wrapper.sh && \
+    chmod +x /entrypoint-wrapper.sh
+
+# Executar entrypoint wrapper
+ENTRYPOINT ["/entrypoint-wrapper.sh"]
 

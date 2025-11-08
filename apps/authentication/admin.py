@@ -1,8 +1,6 @@
 from django.contrib import admin
-from django.contrib import messages
 from django.utils.html import format_html
 from django.urls import reverse
-from django.utils.safestring import mark_safe
 from apps.authentication.models import CustomerUser
 from apps.services.models.services import Service
 
@@ -20,8 +18,24 @@ class ServiceInline(admin.TabularInline):
 
 @admin.register(CustomerUser)
 class CustomerUserAdmin(admin.ModelAdmin):
-    list_display = ("id", "usuario_link", "status_visual", "tipo_usuario", "universidade", "curso", "ano_formatura", "total_servicos")
-    list_filter = ("tipo_usuario", "universidade", "curso", "ano_formatura")
+    list_display = (
+        "id",
+        "usuario_link",
+        "status_visual",
+        "tipo_usuario",
+        "universidade",
+        "curso",
+        "ano_formatura",
+        "preferred_payout_method",
+        "total_servicos",
+    )
+    list_filter = (
+        "tipo_usuario",
+        "universidade",
+        "curso",
+        "ano_formatura",
+        "preferred_payout_method",
+    )
 
     search_fields = ("usuario__username", "usuario__email",)
     readonly_fields = ("total_servicos", "servicos_ativos", "data_ultimo_servico")
@@ -33,6 +47,21 @@ class CustomerUserAdmin(admin.ModelAdmin):
         }),
         ('Dados Acadêmicos', {
             'fields': ('universidade', 'curso', 'ano_formatura'),
+            'classes': ('collapse',)
+        }),
+        ('Dados de Recebimento', {
+            'fields': (
+                'preferred_payout_method',
+                'pix_key',
+                'pix_key_type',
+                'payout_bank_code',
+                'payout_bank_branch',
+                'payout_bank_account',
+                'payout_bank_account_type',
+                'payout_account_holder_name',
+                'payout_account_holder_document',
+                'payout_last_updated_at',
+            ),
             'classes': ('collapse',)
         }),
         ('Estatísticas', {

@@ -1,8 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils import timezone
 from .models import CustomerUser
 from .constants.user import USER_TYPE_CHOICES
+from apps.authentication.constants.payout import (
+    BANK_ACCOUNT_TYPE_CHOICES,
+    PAYOUT_METHOD_CHOICES,
+    PIX_KEY_TYPE_CHOICES,
+)
 from apps.academic.models.academics import Universidade, Curso
 from common.schemas.user import UserNestedSerializer
 from common.schemas.academic import UniversidadeNestedSerializer, CursoNestedSerializer
@@ -158,7 +164,25 @@ class CustomerUserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomerUser
-        fields = ['id', 'usuario', 'tipo_usuario', 'universidade', 'curso', 'ano_formatura']
+        fields = [
+            'id',
+            'usuario',
+            'tipo_usuario',
+            'universidade',
+            'curso',
+            'ano_formatura',
+            'preferred_payout_method',
+            'pix_key',
+            'pix_key_type',
+            'payout_bank_code',
+            'payout_bank_branch',
+            'payout_bank_account',
+            'payout_bank_account_type',
+            'payout_account_holder_name',
+            'payout_account_holder_document',
+            'payout_last_updated_at',
+        ]
+        read_only_fields = ['payout_last_updated_at']
 
 
 class CustomerUserUpdateSerializer(serializers.ModelSerializer):
@@ -169,6 +193,26 @@ class CustomerUserUpdateSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False)
     
     # Campos do CustomerUser
+    preferred_payout_method = serializers.ChoiceField(
+        choices=PAYOUT_METHOD_CHOICES,
+        required=False,
+    )
+    pix_key = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    pix_key_type = serializers.ChoiceField(
+        choices=PIX_KEY_TYPE_CHOICES,
+        required=False,
+        allow_null=True,
+    )
+    payout_bank_account_type = serializers.ChoiceField(
+        choices=BANK_ACCOUNT_TYPE_CHOICES,
+        required=False,
+        allow_null=True,
+    )
+    payout_bank_code = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    payout_bank_branch = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    payout_bank_account = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    payout_account_holder_name = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    payout_account_holder_document = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     universidade_id = serializers.PrimaryKeyRelatedField(
         queryset=Universidade.objects.all(),
         source='universidade',
@@ -184,7 +228,24 @@ class CustomerUserUpdateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomerUser
-        fields = ['username', 'email', 'first_name', 'last_name', 'universidade_id', 'curso_id', 'ano_formatura']
+        fields = [
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'universidade_id',
+            'curso_id',
+            'ano_formatura',
+            'preferred_payout_method',
+            'pix_key',
+            'pix_key_type',
+            'payout_bank_code',
+            'payout_bank_branch',
+            'payout_bank_account',
+            'payout_bank_account_type',
+            'payout_account_holder_name',
+            'payout_account_holder_document',
+        ]
     
     def update(self, instance, validated_data):
         # Separar dados do User e CustomerUser
@@ -203,8 +264,25 @@ class CustomerUserUpdateSerializer(serializers.ModelSerializer):
         user.save()
         
         # Atualizar CustomerUser
+        payout_fields = {
+            'preferred_payout_method',
+            'pix_key',
+            'pix_key_type',
+            'payout_bank_code',
+            'payout_bank_branch',
+            'payout_bank_account',
+            'payout_bank_account_type',
+            'payout_account_holder_name',
+            'payout_account_holder_document',
+        }
+        payout_updated = any(field in validated_data for field in payout_fields)
+
         for field, value in validated_data.items():
             setattr(instance, field, value)
+
+        if payout_updated:
+            instance.payout_last_updated_at = timezone.now()
+
         instance.save()
         
         return instance

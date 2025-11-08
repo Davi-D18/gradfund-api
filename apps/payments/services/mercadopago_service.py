@@ -24,14 +24,18 @@ class MercadoPagoService:
                 "email": payment_data['contratante_email']
             },
             "back_urls": {
-                "success": payment_data.get('success_url', 'http://localhost:3000/payment/success'),
-                "failure": payment_data.get('failure_url', 'http://localhost:3000/payment/failure'),
-                "pending": payment_data.get('pending_url', 'http://localhost:3000/payment/pending')
+                "success": payment_data.get('success_url', f"{settings.FRONTEND_URL}/pagamentos/sucesso"),
+                "failure": payment_data.get('failure_url', f"{settings.FRONTEND_URL}/pagamentos/erro"),
+                "pending": payment_data.get('pending_url', f"{settings.FRONTEND_URL}/pagamentos/pendente"),
             },
             "external_reference": str(payment_data['payment_id']),
-            "notification_url": payment_data.get('webhook_url', '')
+            "notification_url": payment_data.get('webhook_url', ''),
         }
-        
+
+        comissao_plataforma = payment_data.get('comissao_plataforma')
+        if comissao_plataforma is not None:
+            preference_data["marketplace_fee"] = float(comissao_plataforma)
+
         response = self.sdk.preference().create(preference_data)
         return response
     
@@ -53,6 +57,6 @@ class MercadoPagoService:
         
         return {
             'valor_total': valor_total,
-            'comissao_plataforma': comissao_plataforma,
-            'valor_universitario': valor_universitario
+            'comissao_plataforma': comissao_plataforma.quantize(Decimal('0.01')),
+            'valor_universitario': valor_universitario.quantize(Decimal('0.01'))
         }
