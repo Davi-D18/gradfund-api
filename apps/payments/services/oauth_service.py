@@ -10,12 +10,8 @@ class MercadoPagoOAuthService:
         """Gera URL para autorização do usuário no Mercado Pago"""
         base_url = "https://auth.mercadopago.com.br/authorization"
         
-        # Extrair client_id do access_token (formato: APP_USR-xxxx)
-        access_token = settings.MERCADOPAGO['ACCESS_TOKEN']
-        client_id = access_token.split('-')[1] if '-' in access_token else settings.MERCADOPAGO['PUBLIC_KEY']
-        
         params = {
-            'client_id': client_id,
+            'client_id': settings.MERCADOPAGO['APPLICATION_ID'],
             'response_type': 'code',
             'platform_id': 'mp',
             'state': str(user_id),
@@ -30,13 +26,9 @@ class MercadoPagoOAuthService:
         """Troca código de autorização por access_token"""
         url = "https://api.mercadopago.com/oauth/token"
         
-        # Extrair client_id do access_token
-        access_token = settings.MERCADOPAGO['ACCESS_TOKEN']
-        client_id = access_token.split('-')[1] if '-' in access_token else settings.MERCADOPAGO['PUBLIC_KEY']
-        
         data = {
-            'client_secret': access_token,
-            'client_id': client_id,
+            'client_secret': settings.MERCADOPAGO['CLIENT_SECRET'],
+            'client_id': settings.MERCADOPAGO['APPLICATION_ID'],
             'grant_type': 'authorization_code',
             'code': authorization_code,
             'redirect_uri': f"{settings.BASE_URL}/api/v1/payments/oauth/callback/"
@@ -60,13 +52,9 @@ class MercadoPagoOAuthService:
         """Renova access_token usando refresh_token"""
         url = "https://api.mercadopago.com/oauth/token"
         
-        # Extrair client_id do access_token
-        access_token = settings.MERCADOPAGO['ACCESS_TOKEN']
-        client_id = access_token.split('-')[1] if '-' in access_token else settings.MERCADOPAGO['PUBLIC_KEY']
-        
         data = {
-            'client_secret': access_token,
-            'client_id': client_id,
+            'client_secret': settings.MERCADOPAGO['CLIENT_SECRET'],
+            'client_id': settings.MERCADOPAGO['APPLICATION_ID'],
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token
         }

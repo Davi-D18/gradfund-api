@@ -30,7 +30,7 @@ def get_oauth_url(request):
         
         return JsonResponse({
             'authorization_url': auth_url,
-            'message': 'Redirecione o usuário para esta URL'
+            'message': 'Abra esta URL no navegador para conectar sua conta'
         })
     except Exception as e:
         return JsonResponse({

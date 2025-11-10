@@ -1,4 +1,4 @@
-from rest_framework import permissions
+from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
@@ -25,6 +25,27 @@ class ServiceViewSet(ModelViewSet):
             return [permissions.IsAuthenticated(), IsOwner()]
         return super().get_permissions()
 
+    def create(self, request, *args, **kwargs):
+        # Validar se o usuário é universitário
+        if request.user.usuario_user.tipo_usuario != 'universitario':
+            return Response(
+                {'error': 'Apenas universitários podem criar serviços'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validar se tem conta Mercado Pago conectada
+        if not request.user.usuario_user.mp_access_token:
+            return Response(
+                {
+                    'error': 'Conta do Mercado Pago não conectada',
+                    'message': 'Você precisa conectar sua conta do Mercado Pago para criar serviços',
+                    'action': 'connect_mercadopago'
+                }, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return super().create(request, *args, **kwargs)
+    
     def get_queryset(self):
         qs = Service.objects.select_related(
             'estudante__usuario',

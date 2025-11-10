@@ -74,3 +74,15 @@ class PaymentViewSet(ModelViewSet):
         )
         serializer = PaymentListSerializer(payments, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def resumo_financeiro(self, request, pk=None):
+        """Retorna resumo financeiro do split do pagamento"""
+        payment = self.get_object()
+        
+        from apps.payments.services.split_service import SplitService
+        split_service = SplitService()
+        
+        resumo = split_service.get_resumo_financeiro(payment)
+        
+        return Response(resumo)

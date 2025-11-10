@@ -7,6 +7,9 @@ from apps.payments.services.mercadopago_service import MercadoPagoService
 from apps.payments.services.payout_service import PayoutService
 from apps.services.models import Service
 from apps.authentication.models import CustomerUser
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService:
@@ -56,7 +59,11 @@ class PaymentService:
         payment.save(update_fields=['valor_plataforma', 'valor_prestador', 'payout_amount', 'payout_status'])
         
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-        # Criar preferência no Mercado Pago
+        # Verificar se universitário tem conta MP conectada
+        if not servico.estudante.mp_access_token:
+            raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
+        
+        # Criar preferência no Mercado Pago usando token do universitário
         payment_data = {
             'payment_id': payment.id,
             'titulo': servico.titulo,
@@ -67,31 +74,44 @@ class PaymentService:
             'success_url': f'{frontend_url}/pagamentos/sucesso',
             'failure_url': f'{frontend_url}/pagamentos/erro',
             'pending_url': f'{frontend_url}/pagamentos/pendente',
-            'comissao_plataforma': split['comissao_plataforma'],
+            'comissao_plataforma': split['comissao_plataforma'],  # 7% para plataforma
         }
         
-        mp_response = self.mp_service.criar_preferencia(payment_data)
-        
-        if mp_response.get('status') == 201:
-            preference = mp_response['response']
-            payment.mercadopago_preference_id = preference['id']
-            payment.save(update_fields=['mercadopago_preference_id'])
+        try:
+            # Usar access token do universitário para criar preferência
+            mp_service_universitario = MercadoPagoService(servico.estudante.mp_access_token)
+            mp_response = mp_service_universitario.criar_preferencia(payment_data)
             
-            return {
-                'payment_id': payment.id,
-                'preference_id': preference['id'],  # Para checkout embutido
-                'checkout_url': preference['init_point'],
-                'sandbox_checkout_url': preference['sandbox_init_point'],
-                'valor_total': payment.valor_total,
-                'valor_plataforma': payment.valor_plataforma,
-                'valor_prestador': payment.valor_prestador,
-                'payout_status': payment.payout_status,
-                'qr_code': preference.get('qr_code', ''),
-            }
-        else:
+            if mp_response.get('status') == 201:
+                preference = mp_response['response']
+                payment.mercadopago_preference_id = preference['id']
+                payment.save(update_fields=['mercadopago_preference_id'])
+                
+                logger.info(f"Preferência criada com sucesso: {preference['id']} para payment: {payment.id}")
+                
+                return {
+                    'payment_id': payment.id,
+                    'preference_id': preference['id'],
+                    'checkout_url': preference['init_point'],
+                    'sandbox_checkout_url': preference['sandbox_init_point'],
+                    'valor_total': payment.valor_total,
+                    'valor_plataforma': payment.valor_plataforma,
+                    'valor_prestador': payment.valor_prestador,
+                    'payout_status': payment.payout_status,
+                    'qr_code': preference.get('qr_code', ''),
+                }
+            else:
+                payment.status = 'rejected'
+                payment.save(update_fields=['status'])
+                error_msg = f"Erro ao criar preferência no Mercado Pago. Status: {mp_response.get('status')}"
+                logger.error(f"{error_msg}, Response: {mp_response}")
+                raise Exception(error_msg)
+                
+        except Exception as e:
             payment.status = 'rejected'
             payment.save(update_fields=['status'])
-            raise Exception(f"Erro ao criar preferência no Mercado Pago. Status: {mp_response.get('status')}, Response: {mp_response}")
+            logger.error(f"Erro ao criar pagamento {payment.id}: {str(e)}")
+            raise
     
     @transaction.atomic
     def processar_webhook(self, webhook_data):
@@ -102,18 +122,25 @@ class PaymentService:
             evento_tipo=webhook_data.get('type', 'unknown')
         )
         
-        # Processar apenas eventos de pagamento
-        if webhook_data.get('type') == 'payment':
+        event_type = webhook_data.get('type')
+        logger.info(f"Processando webhook tipo: {event_type}")
+        
+        # Processar eventos de pagamento
+        if event_type == 'payment':
             payment_id = webhook_data.get('data', {}).get('id')
             
             if payment_id:
+                logger.info(f"Consultando pagamento MP: {payment_id}")
+                
                 # Usar token da plataforma para consultar webhook
-                mp_service = MercadoPagoService()  # Token da plataforma
+                mp_service = MercadoPagoService()
                 mp_response = mp_service.consultar_pagamento(payment_id)
                 
                 if mp_response['status'] == 200:
                     payment_info = mp_response['response']
                     external_reference = payment_info.get('external_reference')
+                    
+                    logger.info(f"Pagamento MP consultado - Status: {payment_info.get('status')}, External Ref: {external_reference}")
                     
                     if external_reference:
                         try:
@@ -122,30 +149,82 @@ class PaymentService:
                             
                             # Atualizar status do pagamento
                             old_status = payment.status
+                            new_status = payment_info.get('status', 'pending')
+                            
                             payment.mercadopago_payment_id = payment_id
-                            payment.status = payment_info.get('status', 'pending')
+                            payment.status = new_status
                             payment.metodo_pagamento = payment_info.get('payment_method_id', '')
                             
-                            should_process_payout = False
-
-                            if payment.status == 'approved' and old_status != 'approved':
+                            logger.info(f"Atualizando payment {payment.id}: {old_status} -> {new_status}")
+                            
+                            # Processar diferentes status
+                            if new_status == 'approved' and old_status != 'approved':
                                 payment.data_aprovacao = timezone.now()
-                                self._atualizar_status_payout(payment)
-                                should_process_payout = payment.payout_status == 'ready'
+                                logger.info(f"Pagamento {payment.id} aprovado - iniciando split")
+                                self._processar_pagamento_aprovado(payment)
+                                
+                            elif new_status == 'rejected':
+                                logger.info(f"Pagamento {payment.id} rejeitado")
+                                self._processar_pagamento_rejeitado(payment)
+                                
+                            elif new_status == 'cancelled':
+                                logger.info(f"Pagamento {payment.id} cancelado")
+                                self._processar_pagamento_cancelado(payment)
+                                
+                            elif new_status in ['pending', 'in_process']:
+                                logger.info(f"Pagamento {payment.id} pendente")
+                                self._processar_pagamento_pendente(payment)
                             
                             payment.save()
-
-                            if should_process_payout:
-                                self._processar_payout(payment)
-
                             webhook.processado = True
                             
+                            logger.info(f"Payment {payment.id} atualizado com sucesso")
+                            
                         except Payment.DoesNotExist:
-                            pass
+                            logger.warning(f"Payment não encontrado para external_reference: {external_reference}")
+                else:
+                    logger.error(f"Erro ao consultar pagamento MP {payment_id}: {mp_response}")
+        
+        elif event_type in ['merchant_order', 'plan', 'subscription']:
+            logger.info(f"Evento {event_type} recebido mas não processado")
+        
+        else:
+            logger.warning(f"Tipo de evento desconhecido: {event_type}")
         
         webhook.save()
         return webhook
 
+    def _processar_pagamento_aprovado(self, payment: Payment):
+        """Processa pagamento aprovado - split automático via marketplace_fee"""
+        logger.info(f"Pagamento {payment.id} aprovado - split automático via marketplace_fee")
+        
+        # O split já foi processado automaticamente pelo Mercado Pago:
+        # - 7% foi para a conta da plataforma
+        # - 93% ficou na conta do universitário
+        
+        # Apenas registrar os valores para controle interno
+        valor_total = payment.valor_total
+        payment.valor_plataforma = valor_total * 0.07
+        payment.valor_prestador = valor_total * 0.93
+        
+        logger.info(f"Split automático: Plataforma R${payment.valor_plataforma}, Universitário R${payment.valor_prestador}")
+        logger.info("Dinheiro já foi dividido automaticamente pelo Mercado Pago")
+    
+    def _processar_pagamento_rejeitado(self, payment: Payment):
+        """Processa pagamento rejeitado"""
+        logger.info(f"Pagamento rejeitado: {payment.id}")
+        # Notificar contratante sobre rejeição se necessário
+        
+    def _processar_pagamento_cancelado(self, payment: Payment):
+        """Processa pagamento cancelado"""
+        logger.info(f"Pagamento cancelado: {payment.id}")
+        # Notificar partes sobre cancelamento se necessário
+        
+    def _processar_pagamento_pendente(self, payment: Payment):
+        """Processa pagamento pendente"""
+        logger.info(f"Pagamento pendente: {payment.id}")
+        # Notificar sobre status pendente se necessário
+    
     def _processar_payout(self, payment: Payment):
         success, message = self.payout_service.processar_pagamento(payment)
         payment.refresh_from_db()
