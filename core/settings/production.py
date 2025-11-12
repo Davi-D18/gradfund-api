@@ -6,8 +6,6 @@ DEBUG = False
 
 DATABASES['default'] = DATABASES['production'] # noqa: F405
 
-CHANNEL_LAYERS['default'] = CHANNEL_LAYERS['production'] # noqa: F405
-
 # Security settings
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
