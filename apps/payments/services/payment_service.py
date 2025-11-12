@@ -63,6 +63,16 @@ class PaymentService:
         if not servico.estudante.mp_access_token:
             raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
         
+        # Verificar se token ainda é válido (pode ter expirado)
+        try:
+            # Testar token fazendo uma consulta simples
+            mp_service_test = MercadoPagoService(servico.estudante.mp_access_token)
+            test_response = mp_service_test.sdk.payment_methods().list_all()
+            if test_response.get('status') != 200:
+                raise ValueError("Token do Mercado Pago expirado. Universitário precisa reconectar conta")
+        except Exception:
+            raise ValueError("Token do Mercado Pago inválido. Universitário precisa reconectar conta")
+        
         # Criar preferência no Mercado Pago usando token do universitário
         payment_data = {
             'payment_id': payment.id,

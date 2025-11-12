@@ -162,9 +162,6 @@ MERCADOPAGO = {
     'PAYOUT_BASE_URL': os.getenv('MERCADOPAGO_PAYOUT_BASE_URL', 'https://api.mercadopago.com'),
 }
 
-# Base URL para callbacks OAuth
-BASE_URL = os.getenv('BASE_URL', 'http://localhost:8000')
-
 # GradFund
 GRADFUND_PIX_KEY = os.getenv('GRADFUND_PIX_KEY')
 GRADFUND_COMMISSION_RATE = 0.07  # 7%

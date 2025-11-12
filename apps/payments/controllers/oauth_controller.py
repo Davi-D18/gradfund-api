@@ -4,7 +4,12 @@ from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from apps.payments.services.oauth_service import MercadoPagoOAuthService
+from apps.payments.services.kyc_validation_service import KYCValidationService
+from django.contrib.auth.models import User
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -59,8 +64,13 @@ def oauth_callback(request):
         oauth_service = MercadoPagoOAuthService()
         tokens = oauth_service.exchange_code_for_tokens(code)
         
+        # Validar KYC do usuário
+        kyc_result = KYCValidationService.verificar_kyc_usuario(
+            tokens['access_token'], 
+            tokens['user_id']
+        )
+        
         # Salvar tokens no usuário
-        from django.contrib.auth.models import User
         user = User.objects.get(id=state)
         customer_user = user.usuario_user
         
@@ -69,8 +79,17 @@ def oauth_callback(request):
         customer_user.mp_user_id = tokens['user_id']
         customer_user.save()
         
+        # Verificar se KYC é suficiente
+        if not kyc_result['kyc_approved']:
+            logger.warning(f"Usuário {user.username} conectou MP mas KYC insuficiente: nível {kyc_result['identification_level']}")
+        
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-        return redirect(f"{frontend_url}/success?connected=true")
+        
+        # Redirecionar com informações de KYC
+        if kyc_result['kyc_approved']:
+            return redirect(f"{frontend_url}/success?connected=true&kyc=approved")
+        else:
+            return redirect(f"{frontend_url}/success?connected=true&kyc=pending&level={kyc_result['identification_level']}")
         
     except Exception as e:
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
@@ -80,17 +99,35 @@ def oauth_callback(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_mp_connection(request):
-    """Verifica se usuário tem conta MP conectada"""
+    """Verifica se usuário tem conta MP conectada e status KYC"""
     try:
         customer_user = request.user.usuario_user
         
         is_connected = bool(customer_user.mp_access_token)
         
-        return JsonResponse({
+        response_data = {
             'is_connected': is_connected,
             'mp_user_id': customer_user.mp_user_id if is_connected else None,
-            'message': 'Conta conectada' if is_connected else 'Conta não conectada'
-        })
+        }
+        
+        if is_connected:
+            # Verificar status KYC atual
+            kyc_result = KYCValidationService.verificar_kyc_usuario(
+                customer_user.mp_access_token,
+                customer_user.mp_user_id
+            )
+            
+            response_data.update({
+                'kyc_approved': kyc_result['kyc_approved'],
+                'identification_level': kyc_result['identification_level'],
+                'can_create_services': kyc_result['kyc_approved'],
+                'message': 'Conta conectada e KYC aprovado' if kyc_result['kyc_approved'] else f'Conta conectada mas KYC pendente (nível {kyc_result["identification_level"]})',
+                'kyc_requirements': KYCValidationService.get_kyc_requirements() if not kyc_result['kyc_approved'] else None
+            })
+        else:
+            response_data['message'] = 'Conta não conectada'
+        
+        return JsonResponse(response_data)
     except Exception as e:
         return JsonResponse({
             'error': str(e)

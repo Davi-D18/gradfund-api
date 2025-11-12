@@ -44,6 +44,24 @@ class ServiceViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Validar KYC do usuário
+        from apps.payments.services.kyc_validation_service import KYCValidationService
+        kyc_result = KYCValidationService.verificar_kyc_usuario(
+            request.user.usuario_user.mp_access_token,
+            request.user.usuario_user.mp_user_id
+        )
+        
+        if not kyc_result['kyc_approved']:
+            return Response(
+                {
+                    'error': 'Verificação de identidade pendente',
+                    'message': f'Seu nível de identificação no Mercado Pago é {kyc_result["identification_level"]}. Precisa ser nível 6 para receber pagamentos.',
+                    'action': 'complete_kyc',
+                    'kyc_requirements': KYCValidationService.get_kyc_requirements()
+                }, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         return super().create(request, *args, **kwargs)
     
     def get_queryset(self):
