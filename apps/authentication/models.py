@@ -35,10 +35,7 @@ class CustomerUser(UUIDModel):
     payout_account_holder_name = models.CharField(max_length=120, blank=True, null=True)
     payout_account_holder_document = models.CharField(max_length=20, blank=True, null=True)
     payout_last_updated_at = models.DateTimeField(blank=True, null=True)
-    # Mercado Pago OAuth
-    mp_access_token = models.CharField(max_length=255, blank=True, null=True)
-    mp_refresh_token = models.CharField(max_length=255, blank=True, null=True)
-    mp_user_id = models.CharField(max_length=50, blank=True, null=True)
+
 
     class Meta:
         verbose_name = "Perfil de Usuário"
