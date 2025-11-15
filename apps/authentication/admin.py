@@ -26,7 +26,6 @@ class CustomerUserAdmin(admin.ModelAdmin):
         "universidade",
         "curso",
         "ano_formatura",
-        "preferred_payout_method",
         "total_servicos",
     )
     list_filter = (
@@ -34,7 +33,6 @@ class CustomerUserAdmin(admin.ModelAdmin):
         "universidade",
         "curso",
         "ano_formatura",
-        "preferred_payout_method",
     )
 
     search_fields = ("usuario__username", "usuario__email",)
@@ -49,19 +47,8 @@ class CustomerUserAdmin(admin.ModelAdmin):
             'fields': ('universidade', 'curso', 'ano_formatura'),
             'classes': ('collapse',)
         }),
-        ('Dados de Recebimento', {
-            'fields': (
-                'preferred_payout_method',
-                'pix_key',
-                'pix_key_type',
-                'payout_bank_code',
-                'payout_bank_branch',
-                'payout_bank_account',
-                'payout_bank_account_type',
-                'payout_account_holder_name',
-                'payout_account_holder_document',
-                'payout_last_updated_at',
-            ),
+        ('Mercado Pago OAuth', {
+            'fields': ('mp_access_token', 'mp_refresh_token', 'mp_user_id'),
             'classes': ('collapse',)
         }),
         ('Estatísticas', {
