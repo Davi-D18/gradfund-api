@@ -14,6 +14,7 @@ from apps.payments.permissions.payment_permissions import (
     IsPaymentParticipant
 )
 from apps.payments.services.payment_service import PaymentService
+from apps.payments.services.split_service import SplitService
 
 
 class PaymentViewSet(ModelViewSet):
@@ -80,7 +81,6 @@ class PaymentViewSet(ModelViewSet):
         """Retorna resumo financeiro do split do pagamento"""
         payment = self.get_object()
         
-        from apps.payments.services.split_service import SplitService
         split_service = SplitService()
         
         resumo = split_service.get_resumo_financeiro(payment)

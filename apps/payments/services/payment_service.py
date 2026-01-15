@@ -49,17 +49,19 @@ class PaymentService:
             valor_total=servico.preco / 100  # Converter centavos para reais
         )
 
+        # Calcular split do pagamento (7% plataforma, 93% prestador)
         split = self.mp_service.calcular_split_pagamento(payment.valor_total)
         payment.valor_plataforma = split['comissao_plataforma']
         payment.valor_prestador = split['valor_universitario']
         payment.payout_amount = split['valor_universitario']
-        payment.payout_status = 'awaiting_info'
+        payment.payout_status = 'ready'  # Pronto para split automático via application_fee
         payment.save(update_fields=['valor_plataforma', 'valor_prestador', 'payout_amount', 'payout_status'])
         
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        
         # Verificar se universitário tem conta MP conectada
         if not servico.estudante.mp_access_token:
-            raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro")
+            raise ValueError("Universitário precisa conectar conta do Mercado Pago primeiro.")
         
         # Verificar se token ainda é válido (pode ter expirado)
         try:
@@ -68,10 +70,13 @@ class PaymentService:
             test_response = mp_service_test.sdk.payment_methods().list_all()
             if test_response.get('status') != 200:
                 raise ValueError("Token do Mercado Pago expirado. Universitário precisa reconectar conta")
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Token MP inválido para usuário {servico.estudante.id}: {str(e)}")
             raise ValueError("Token do Mercado Pago inválido. Universitário precisa reconectar conta")
         
-        # Criar preferência no Mercado Pago usando token do universitário
+        # IMPORTANTE: Criar preferência usando token do PRESTADOR (universitário)
+        # O application_fee será deduzido automaticamente e enviado para a conta da plataforma
+        # O restante (93%) vai automaticamente para a conta do prestador
         payment_data = {
             'payment_id': payment.id,
             'titulo': servico.titulo,
@@ -82,7 +87,7 @@ class PaymentService:
             'success_url': f'{frontend_url}/pagamentos/sucesso',
             'failure_url': f'{frontend_url}/pagamentos/erro',
             'pending_url': f'{frontend_url}/pagamentos/pendente',
-            'comissao_plataforma': split['comissao_plataforma'],  # 7% para plataforma
+            'comissao_plataforma': split['comissao_plataforma'],  # 7% para plataforma (application_fee)
         }
         
         try:
@@ -206,17 +211,22 @@ class PaymentService:
         """Processa pagamento aprovado - split automático via marketplace_fee"""
         logger.info(f"Pagamento {payment.id} aprovado - split automático via marketplace_fee")
         
-        # O split já foi processado automaticamente pelo Mercado Pago:
-        # - 7% foi para a conta da plataforma
-        # - 93% ficou na conta do universitário
+        # O split foi processado automaticamente pelo Mercado Pago usando marketplace_fee:
+        # - marketplace_fee (7%) foi para a conta da plataforma automaticamente
+        # - valor_total - marketplace_fee (93%) ficou na conta do universitário automaticamente
         
-        # Apenas registrar os valores para controle interno
-        valor_total = payment.valor_total
-        payment.valor_plataforma = valor_total * 0.07
-        payment.valor_prestador = valor_total * 0.93
+        # Validar e registrar os valores para controle interno
+        from apps.payments.services.split_service import SplitService
+        split_service = SplitService()
+        split = split_service.calcular_split(payment.valor_total)
         
-        logger.info(f"Split automático: Plataforma R${payment.valor_plataforma}, Universitário R${payment.valor_prestador}")
-        logger.info("Dinheiro já foi dividido automaticamente pelo Mercado Pago")
+        payment.valor_plataforma = split['valor_plataforma']
+        payment.valor_prestador = split['valor_universitario']
+        payment.payout_status = 'completed'  # Split automático já foi feito pelo MP
+        payment.payout_amount = split['valor_universitario']
+        
+        logger.info(f"Split automático confirmado: Plataforma R${payment.valor_plataforma} (7%), Universitário R${payment.valor_prestador} (93%)")
+        logger.info("Dinheiro já foi dividido automaticamente pelo Mercado Pago via marketplace_fee")
     
     def _processar_pagamento_rejeitado(self, payment: Payment):
         """Processa pagamento rejeitado"""

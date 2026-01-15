@@ -53,10 +53,20 @@ class MercadoPagoService:
             if payment_data.get('webhook_url'):
                 preference_data["notification_url"] = payment_data['webhook_url']
             
-            # Implementar marketplace_fee com OAuth
+            # Marketplace Fee: Para Checkout Pro (preferências), usar marketplace_fee
+            # IMPORTANTE: Para split automático funcionar:
+            # 1. A conta deve estar configurada como Marketplace no Mercado Pago
+            # 2. O campo marketplace deve ter o formato MP-MKT-{APPLICATION_ID}
+            # 3. O marketplace_fee será deduzido automaticamente e enviado para a conta da plataforma
+            # 4. O restante vai para a conta do prestador (vendedor)
             comissao_plataforma = payment_data.get('comissao_plataforma')
             if comissao_plataforma and float(comissao_plataforma) > 0:
+                # Campo marketplace obrigatório para marketplace_fee funcionar
+                application_id = settings.MERCADOPAGO.get('APPLICATION_ID')
+                if application_id:
+                    preference_data["marketplace"] = f"MP-MKT-{application_id}"
                 preference_data["marketplace_fee"] = float(comissao_plataforma)
+                logger.info(f"Marketplace fee configurado: R${comissao_plataforma} (7% do valor total)")
             
             logger.info(f"Criando preferência MP para payment_id: {payment_data['payment_id']}")
             response = self.sdk.preference().create(preference_data)
